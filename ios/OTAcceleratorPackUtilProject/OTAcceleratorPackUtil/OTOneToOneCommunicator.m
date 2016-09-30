@@ -1,9 +1,7 @@
 //
-//  TextChatComponentChatView.h
-//  TextChatComponent
+//  OTOneToOneCommunicator.m
 //
-//  Created by Xi Huang on 2/23/16.
-//  Copyright © 2016 Tokbox. All rights reserved.
+//  Copyright © 2016 Tokbox, Inc. All rights reserved.
 //
 
 #import "OTOneToOneCommunicator.h"
@@ -235,6 +233,16 @@ static NSString* const KLogVariationFailure = @"Failure";
                          error:error];
 }
 
+- (void)session:(OTSession*) session connectionCreated:(OTConnection*) connection {
+    [self notifiyAllWithSignal:OTSessionConnectionCreated
+                         error:nil];
+}
+
+- (void)session:(OTSession*) session connectionDestroyed:(OTConnection*) connection {
+    [self notifiyAllWithSignal:OTSessionConnectionDestroyed
+                         error:nil];
+}
+
 #pragma mark - OTPublisherDelegate
 - (void)publisher:(OTPublisherKit *)publisher didFailWithError:(OTError *)error {
     [self notifiyAllWithSignal:OTPublisherDidFail
@@ -253,26 +261,48 @@ static NSString* const KLogVariationFailure = @"Failure";
 
 #pragma mark - OTSubscriberKitDelegate
 -(void) subscriberDidConnectToStream:(OTSubscriberKit*)subscriber {
-    [self notifiyAllWithSignal:OTSubscriberConnect
+    [self notifiyAllWithSignal:OTSubscriberDidConnect
                          error:nil];
 }
 
 -(void)subscriberVideoDisabled:(OTSubscriber *)subscriber reason:(OTSubscriberVideoEventReason)reason {
-    [self notifiyAllWithSignal:OTSubscriberVideoDisabled
-                         error:nil];
+    
+    if (reason == OTSubscriberVideoEventPublisherPropertyChanged) {
+        [self notifiyAllWithSignal:OTSubscriberVideoDisabledByPublisher
+                             error:nil];
+    }
+    else if (reason == OTSubscriberVideoEventSubscriberPropertyChanged) {
+        [self notifiyAllWithSignal:OTSubscriberVideoDisabledBySubscriber
+                             error:nil];
+    }
+    else if (reason == OTSubscriberVideoEventQualityChanged) {
+        [self notifiyAllWithSignal:OTSubscriberVideoDisabledByBadQuality
+                             error:nil];
+    }
 }
 
 - (void)subscriberVideoEnabled:(OTSubscriberKit *)subscriber reason:(OTSubscriberVideoEventReason)reason {
-    [self notifiyAllWithSignal:OTSubscriberVideoEnabled
-                         error:nil];
+    
+    if (reason == OTSubscriberVideoEventPublisherPropertyChanged) {
+        [self notifiyAllWithSignal:OTSubscriberVideoEnabledByPublisher
+                             error:nil];
+    }
+    else if (reason == OTSubscriberVideoEventSubscriberPropertyChanged) {
+        [self notifiyAllWithSignal:OTSubscriberVideoEnabledByGoodQuality
+                             error:nil];
+    }
+    else if (reason == OTSubscriberVideoEventQualityChanged) {
+        [self notifiyAllWithSignal:OTSubscriberVideoEnabledByGoodQuality
+                             error:nil];
+    }
 }
 
--(void) subscriberVideoDisableWarning:(OTSubscriber *)subscriber reason:(OTSubscriberVideoEventReason)reason {
+-(void)subscriberVideoDisableWarning:(OTSubscriber *)subscriber reason:(OTSubscriberVideoEventReason)reason {
     [self notifiyAllWithSignal:OTSubscriberVideoDisableWarning
                          error:nil];
 }
 
--(void) subscriberVideoDisableWarningLifted:(OTSubscriberKit *)subscriber reason:(OTSubscriberVideoEventReason)reason {
+-(void)subscriberVideoDisableWarningLifted:(OTSubscriberKit *)subscriber reason:(OTSubscriberVideoEventReason)reason {
     [self notifiyAllWithSignal:OTSubscriberVideoDisableWarningLifted
                          error:nil];
 }

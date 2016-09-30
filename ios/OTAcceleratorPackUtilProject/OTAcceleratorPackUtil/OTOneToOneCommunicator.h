@@ -1,7 +1,7 @@
 //
-//  TextChatComponentChatView.h
+//  OTOneToOneCommunicator.h
 //
-//  Copyright © 2016 Tokbox. All rights reserved.
+//  Copyright © 2016 Tokbox, Inc. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
@@ -13,13 +13,19 @@ typedef NS_ENUM(NSUInteger, OTOneToOneCommunicationSignal) {
     OTSessionDidFail,
     OTSessionStreamCreated,
     OTSessionStreamDestroyed,
+    OTSessionConnectionCreated,
+    OTSessionConnectionDestroyed,
     OTPublisherDidFail,
     OTPublisherStreamCreated,
     OTPublisherStreamDestroyed,
-    OTSubscriberConnect,
+    OTSubscriberDidConnect,
     OTSubscriberDidFail,
-    OTSubscriberVideoDisabled,
-    OTSubscriberVideoEnabled,
+    OTSubscriberVideoDisabledByPublisher,
+    OTSubscriberVideoDisabledBySubscriber,
+    OTSubscriberVideoDisabledByBadQuality,
+    OTSubscriberVideoEnabledByPublisher,
+    OTSubscriberVideoEnabledBySubscriber,
+    OTSubscriberVideoEnabledByGoodQuality,
     OTSubscriberVideoDisableWarning,
     OTSubscriberVideoDisableWarningLifted,
 };

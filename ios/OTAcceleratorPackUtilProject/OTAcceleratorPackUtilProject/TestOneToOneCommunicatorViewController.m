@@ -35,7 +35,7 @@
         self.communicator.publisherView.frame = self.publisherView.bounds;
         [self.publisherView addSubview:self.communicator.publisherView];
     }
-    else if (signal == OTSubscriberConnect) {
+    else if (signal == OTSubscriberDidConnect) {
         self.communicator.subscriberView.frame = self.subscriberView.bounds;
         [self.subscriberView addSubview:self.communicator.subscriberView];
     }

@@ -245,4 +245,24 @@ archiveStoppedWithId:(NSString*)archiveId {
     }];
 }
 
+- (void)sessionDidBeginReconnecting:(OTSession*)session {
+    
+    [self.delegates enumerateObjectsUsingBlock:^(id<OTSessionDelegate> obj, BOOL *stop) {
+        
+        if ([obj respondsToSelector:@selector(sessionDidBeginReconnecting:)]) {
+            [obj sessionDidBeginReconnecting:session];
+        }
+    }];
+}
+
+- (void)sessionDidReconnect:(OTSession *)session {
+    
+    [self.delegates enumerateObjectsUsingBlock:^(id<OTSessionDelegate> obj, BOOL *stop) {
+        
+        if ([obj respondsToSelector:@selector(sessionDidReconnect:)]) {
+            [obj sessionDidReconnect:session];
+        }
+    }];
+}
+
 @end
