@@ -4,6 +4,17 @@ The changelog for `acc-pack-common` iOS.
 
 --------------------------------------
 
+1.1.8
+-----
+
+### Enhancements
+
+- Add documentation
+
+### Breaking changes
+
+- Remove 'setOpenTokApiKey:sessionId:token:' from OTOneToOneCommunicator. Instead, force to use the same one from OTAcceleratorSession to avoid redundancy.
+
 1.1.7
 -----
 
