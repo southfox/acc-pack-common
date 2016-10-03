@@ -238,6 +238,15 @@ static NSString* const KLogVariationFailure = @"Failure";
                          error:nil];
 }
 
+- (void)sessionDidBeginReconnecting:(OTSession *)session {
+    [self notifiyAllWithSignal:OTSessionConnectionDidBeginReconnecting
+                         error:nil];
+}
+
+- (void)sessionDidReconnect:(OTSession *)session {
+    [self notifiyAllWithSignal:OTSessionConnectionDidReconnect
+                         error:nil];
+}
 #pragma mark - OTPublisherDelegate
 - (void)publisher:(OTPublisherKit *)publisher didFailWithError:(OTError *)error {
     if (publisher == self.publisher) {
@@ -340,6 +349,7 @@ static NSString* const KLogVariationFailure = @"Failure";
 }
 
 - (BOOL)isSubscribeToAudio {
+    if (!_subscriber.stream.hasAudio) return NO;
     return _subscriber.subscribeToAudio;
 }
 
@@ -348,6 +358,7 @@ static NSString* const KLogVariationFailure = @"Failure";
 }
 
 - (BOOL)isSubscribeToVideo {
+    if (!_subscriber.stream.hasVideo) return NO;
     return _subscriber.subscribeToVideo;
 }
 

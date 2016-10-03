@@ -4,6 +4,13 @@ The changelog for `acc-pack-common` iOS.
 
 --------------------------------------
 
+1.1.9
+-----
+
+### Fixes
+
+- Fixed `isSubscribeToAudio` and `isSubscribeToVideo` have a wrong value as `subscriber.stream` is not taken into account.
+
 1.1.8
 -----
 
@@ -13,7 +20,7 @@ The changelog for `acc-pack-common` iOS.
 
 ### Breaking changes
 
-- Remove 'setOpenTokApiKey:sessionId:token:' from OTOneToOneCommunicator. Instead, force to use the same one from OTAcceleratorSession to avoid redundancy.
+- Remove `setOpenTokApiKey:sessionId:token:` from OTOneToOneCommunicator. Instead, force to use the same one from OTAcceleratorSession to avoid redundancy.
 
 1.1.7
 -----

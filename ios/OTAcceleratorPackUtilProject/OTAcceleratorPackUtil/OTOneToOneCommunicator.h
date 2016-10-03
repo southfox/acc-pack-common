@@ -15,6 +15,8 @@ typedef NS_ENUM(NSUInteger, OTOneToOneCommunicationSignal) {
     OTSessionStreamDestroyed,
     OTSessionConnectionCreated,
     OTSessionConnectionDestroyed,
+    OTSessionConnectionDidBeginReconnecting,
+    OTSessionConnectionDidReconnect,
     OTPublisherDidFail,
     OTPublisherStreamCreated,
     OTPublisherStreamDestroyed,
