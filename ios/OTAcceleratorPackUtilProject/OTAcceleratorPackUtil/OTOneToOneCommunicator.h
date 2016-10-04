@@ -13,10 +13,8 @@ typedef NS_ENUM(NSUInteger, OTOneToOneCommunicationSignal) {
     OTSessionDidFail,
     OTSessionStreamCreated,
     OTSessionStreamDestroyed,
-    OTSessionConnectionCreated,
-    OTSessionConnectionDestroyed,
-    OTSessionConnectionDidBeginReconnecting,
-    OTSessionConnectionDidReconnect,
+    OTSessionDidBeginReconnecting,
+    OTSessionDidReconnect,
     OTPublisherDidFail,
     OTPublisherStreamCreated,
     OTPublisherStreamDestroyed,
@@ -67,6 +65,11 @@ typedef void (^OTOneToOneCommunicatorBlock)(OTOneToOneCommunicationSignal signal
  */
 - (NSError *)disconnect;
 
+/**
+ *  The object that acts as the delegate of the screen sharer.
+ *
+ *  The delegate must adopt the OTOneToOneCommunicatorDelegate protocol. The delegate is not retained.
+ */
 @property (weak, nonatomic) id<OTOneToOneCommunicatorDelegate> delegate;
 
 /**
@@ -83,12 +86,14 @@ typedef void (^OTOneToOneCommunicatorBlock)(OTOneToOneCommunicationSignal signal
 @property (readonly, nonatomic) UIView *subscriberView;
 
 /**
- *  A boolean value to indicate whether the subscriber subscribes to the stream's audio.
+ *  A boolean value to indicate whether the communicator has available audio from subscription.
+ *  This property will take the stream's hasAudio into account internally.
  */
 @property (nonatomic, getter=isSubscribeToAudio) BOOL subscribeToAudio;
 
 /**
- *  A boolean value to indicate whether the subscriber subscribes to the stream's video.
+ *  A boolean value to indicate whether the communicator has available video from subscription.
+ *  This property will take the stream's hasVideo into account internally.
  */
 @property (nonatomic, getter=isSubscribeToVideo) BOOL subscribeToVideo;
 
