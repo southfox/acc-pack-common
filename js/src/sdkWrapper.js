@@ -26,20 +26,6 @@ const registerEvents = (events) => {
 };
 
 /**
- * Register a callback for a specific event
- * @param {String} event - The name of the event
- * @param {Function} callback
- */
-const on = (event, callback) => {
-  const eventCallbacks = registeredEvents[event];
-  if (!eventCallbacks) {
-    logging.message(`${event} is not a registered event.`);
-  } else {
-    eventCallbacks.add(callback);
-  }
-};
-
-/**
  * Remove a callback for a specific event
  * @param {String} event - The name of the event
  * @param {Function} callback
@@ -50,6 +36,20 @@ const off = (event, callback) => {
     logging.message(`${event} is not a registered event.`);
   } else {
     eventCallbacks.delete(callback);
+  }
+};
+
+/**
+ * Register a callback for a specific event
+ * @param {String} event - The name of the event
+ * @param {Function} callback
+ */
+const on = (event, callback) => {
+  const eventCallbacks = registeredEvents[event];
+  if (!eventCallbacks) {
+    logging.message(`${event} is not a registered event.`);
+  } else {
+    eventCallbacks.add(callback);
   }
 };
 
@@ -183,8 +183,8 @@ const opentokSDK = {
   getPublisherForStream: getSession().getPublisherForStream,
   getSubscribersForStream: getSession().getSubscribersForStream,
   init,
-  on,
   off,
+  on,
   publish,
   signal: getSession().signal,
   subscribe,
