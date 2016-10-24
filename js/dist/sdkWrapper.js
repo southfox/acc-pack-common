@@ -16,9 +16,9 @@ const registeredEvents = {};
  * also be passed as a string.
  * @returns {function} See triggerEvent
  */
-const registerEvents = (events) => {
+const registerEvents = events => {
   const eventList = Array.isArray(events) ? events : [events];
-  eventList.forEach((event) => {
+  eventList.forEach(event => {
     if (!registeredEvents[event]) {
       registeredEvents[event] = new Set();
     }
@@ -33,7 +33,7 @@ const registerEvents = (events) => {
 const on = (event, callback) => {
   const eventCallbacks = registeredEvents[event];
   if (!eventCallbacks) {
-    logging.message(`${event} is not a registered event.`);
+    logging.message(`${ event } is not a registered event.`);
   } else {
     eventCallbacks.add(callback);
   }
@@ -47,7 +47,7 @@ const on = (event, callback) => {
 const off = (event, callback) => {
   const eventCallbacks = registeredEvents[event];
   if (!eventCallbacks) {
-    logging.message(`${event} is not a registered event.`);
+    logging.message(`${ event } is not a registered event.`);
   } else {
     eventCallbacks.delete(callback);
   }
@@ -62,7 +62,7 @@ const triggerEvent = (event, data) => {
   const eventCallbacks = registeredEvents[event];
   if (!eventCallbacks) {
     registerEvents(event);
-    logging.message(`${event} has been registered as a new event.`);
+    logging.message(`${ event } has been registered as a new event.`);
   } else {
     eventCallbacks.forEach(callback => callback(data, event));
   }
@@ -74,7 +74,7 @@ let getSession;
 /** Returns the current OpenTok session credentials */
 let getCredentials;
 
-const createEventListeners = (session) => {
+const createEventListeners = session => {
   /**
    * Register OpenTok session events internally
    */
@@ -84,64 +84,62 @@ const createEventListeners = (session) => {
    * Wrap session events and update state when streams are created
    * or destroyed
    */
-  accPackEvents.session.forEach((eventName) => {
-    session.on(eventName, (event) => {
-      if (eventName === 'streamCreated') { state.addStream(event.stream); }
-      if (eventName === 'streamDestroyed') { state.removeStream(event.stream); }
+  accPackEvents.session.forEach(eventName => {
+    session.on(eventName, event => {
+      if (eventName === 'streamCreated') {
+        state.addStream(event.stream);
+      }
+      if (eventName === 'streamDestroyed') {
+        state.removeStream(event.stream);
+      }
       triggerEvent(eventName, event);
     });
   });
 };
 
-const createPublisher = (container, options) =>
-  new Promise((resolve, reject) => {
-    const publisher = OT.initPublisher(container, options, (error) => {
-      error ? reject(error) : resolve(publisher);
-    });
+const createPublisher = (container, options) => new Promise((resolve, reject) => {
+  const publisher = OT.initPublisher(container, options, error => {
+    error ? reject(error) : resolve(publisher);
   });
+});
 
-const publish = (container, options) =>
-  new Promise((resolve, reject) => {
-    createPublisher(container, options)
-      .then((publisher) => {
-        state.addPublisher(publisher.stream.videoType, publisher);
-        getSession().publish(publisher, resolve);
-      })
-      .catch((error) => {
-        const errorMessage = error.code === 1010 ? 'Check your network connection' : error.message;
-        reject(errorMessage);
-      });
+const publish = (container, options) => new Promise((resolve, reject) => {
+  createPublisher(container, options).then(publisher => {
+    state.addPublisher(publisher.stream.videoType, publisher);
+    getSession().publish(publisher, resolve);
+  }).catch(error => {
+    const errorMessage = error.code === 1010 ? 'Check your network connection' : error.message;
+    reject(errorMessage);
   });
+});
 
-const unpublish = (publisher) => {
+const unpublish = publisher => {
   const type = publisher.stream.videoType;
   getSession().unpublish(publisher);
   state.removePublisher(type, publisher);
 };
 
-const subscribe = (stream, container, options) =>
-  new Promise((resolve, reject) => {
-    const subscriber = getSession().subscribe(stream, container, options, (error) => {
-      if (error) {
-        reject(error);
-      } else {
-        state.addSubscriber(subscriber);
-        resolve();
-      }
-    });
+const subscribe = (stream, container, options) => new Promise((resolve, reject) => {
+  const subscriber = getSession().subscribe(stream, container, options, error => {
+    if (error) {
+      reject(error);
+    } else {
+      state.addSubscriber(subscriber);
+      resolve();
+    }
   });
+});
 
 /**
  * Unsubscribe from a stream and update the state
  * @param {Object} subscriber - An OpenTok subscriber object
  * @returns {Promise} <resolve: empty>
  */
-const unsubscribe = subscriber =>
-  new Promise((resolve) => {
-    getSession().unsubscribe(subscriber);
-    state.removeSubscriber(subscriber);
-    resolve();
-  });
+const unsubscribe = subscriber => new Promise(resolve => {
+  getSession().unsubscribe(subscriber);
+  state.removeSubscriber(subscriber);
+  resolve();
+});
 
 /**
  * Ensures that we have the required credentials
@@ -152,9 +150,9 @@ const unsubscribe = subscriber =>
  */
 const validateCredentials = (credentials = []) => {
   const required = ['apiKey', 'sessionId', 'token'];
-  required.forEach((credential) => {
+  required.forEach(credential => {
     if (!credentials[credential]) {
-      logging.error(`${credential} is a required credential`);
+      logging.error(`${ credential } is a required credential`);
     }
   });
 };
@@ -166,7 +164,7 @@ const validateCredentials = (credentials = []) => {
  * @param {Array} [options.packages]
  * @param {Object} [options.containers]
  */
-const init = (credentials) => {
+const init = credentials => {
   validateCredentials(credentials);
   const session = OT.initSession(credentials.apiKey, credentials.sessionId);
   createEventListeners(session);
@@ -189,7 +187,7 @@ const opentokSDK = {
   signal: getSession().signal,
   subscribe,
   unpublish,
-  unsubscribe,
+  unsubscribe
 };
 
 if (global === window) {
