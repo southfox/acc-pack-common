@@ -11,12 +11,12 @@ module.exports = events;
 "use strict";
 
 // eslint-disable-next-line no-console
-var message = function message(_message) {
-  return console.log("otAccCore: " + _message);
+var message = function message(messageText) {
+  return console.log("otSDK: " + messageText);
 };
 
-var error = function error(message) {
-  throw new Error("otAccCore: " + message);
+var error = function error(errorMessage) {
+  throw new Error("otSDK: " + errorMessage);
 };
 
 module.exports = {

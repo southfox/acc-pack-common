@@ -1,8 +1,8 @@
 // eslint-disable-next-line no-console
-const message = message => console.log(`otAccCore: ${ message }`);
+const message = messageText => console.log(`otSDK: ${ messageText }`);
 
-const error = message => {
-  throw new Error(`otAccCore: ${ message }`);
+const error = errorMessage => {
+  throw new Error(`otSDK: ${ errorMessage }`);
 };
 
 module.exports = {
