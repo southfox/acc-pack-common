@@ -63,11 +63,14 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      session: null,
       connected: false,
       active: false,
       publishers: null,
       subscribers: null,
       meta: null,
+      streamMap: null,
+      localPublisherId: null,
       localAudioEnabled: true,
       localVideoEnabled: true,
     };
@@ -77,8 +80,8 @@ class App extends Component {
   }
 
   componentDidMount() {
-    otSDK.init(credentials);
-    otSDK.connect().then(() => this.setState({ connected: true }));
+    const session = otSDK.init(credentials);
+    otSDK.connect().then(() => this.setState({ session, connected: true }));
     const events = [
       'streamCreated',
       'streamDestroyed',
@@ -89,38 +92,49 @@ class App extends Component {
       'startScreenShare',
       'endScreenShare',
     ];
-
-    //TODO subscribe to existing streams
-
-    otSDK.on('streamCreated', ({ stream }) => {
-      const type = stream.videoType;
-      otSDK.subscribe(stream, `${type}SubscriberContainer`, callProperties);
-      this.setState(otSDK.state());
-    });
-
-    otSDK.on('streamDestroyed', ({ stream }) => {
-      this.setState(otSDK.state());
-    });
-
   }
 
   startCall() {
-    this.setState({ active: true });
+    const { session, streamMap } = this.state;
+
+    const subscribeToStream = stream => {
+      if (streamMap && streamMap[stream.id]) { return; }
+      const type = stream.videoType;
+      otSDK.subscribe(stream, `${type}SubscriberContainer`, callProperties)
+      .then(() => this.setState(otSDK.state()));
+    };
+
+    // Subscribe to initial stream
+    session.streams.forEach(subscribeToStream);
+
+    // Subscribe to new streams
+    otSDK.on('streamCreated', ({ stream }) => subscribeToStream(stream));
+
+    // Update state when streams are destroyed
+    otSDK.on('streamDestroyed', ({ stream }) => this.setState(otSDK.state()));
+
+    // Publish local camera stream
     otSDK.initPublisher('cameraPublisherContainer', callProperties)
       .then(publisher => {
         otSDK.publish(publisher);
-        this.setState(otSDK.state())
+        this.setState(Object.assign({}, otSDK.state(), { localPublisherId: publisher.id }));
       }).catch(error => console.log(error));
+
+    this.setState({ active: true });
   }
 
   toggleLocalAudio() {
-    otSDK.toggleLocalAudio(!this.state.localAudioEnabled);
-    this.setState({ localAudioEnabled: !this.state.localAudioEnabled });
+    const { localPublisherId, publishers, localAudioEnabled } = this.state;
+    const enabled = !localAudioEnabled;
+    publishers.camera[localPublisherId].publishAudio(enabled)
+    this.setState({ localAudioEnabled: enabled });
   }
 
   toggleLocalVideo() {
-    otSDK.toggleLocalVideo(!this.state.localVideoEnabled);
-    this.setState({ localVideoEnabled: !this.state.localVideoEnabled });
+    const { localPublisherId, publishers, localVideoEnabled } = this.state;
+    const enabled = !localVideoEnabled;
+    publishers.camera[localPublisherId].publishVideo(enabled)
+    this.setState({ localVideoEnabled: enabled });
   }
 
   render() {
