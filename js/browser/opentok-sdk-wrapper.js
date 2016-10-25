@@ -33,8 +33,8 @@ module.exports = {
  * Dependencies
  */
 var logging = require('./logging');
-var accPackEvents = require('./events');
-var state = require('./state');
+var sdkWrapperEvents = require('./events');
+var internalState = require('./state');
 
 /** Eventing */
 
@@ -44,7 +44,6 @@ var registeredEvents = {};
  * Register events that can be listened to be other components/modules
  * @param {array | string} events - A list of event names. A single event may
  * also be passed as a string.
- * @returns {function} See triggerEvent
  */
 var registerEvents = function registerEvents(events) {
   var eventList = Array.isArray(events) ? events : [events];
@@ -101,50 +100,45 @@ var triggerEvent = function triggerEvent(event, data) {
 };
 
 /** Returns the current OpenTok session object */
-var getSession = void 0;
+var getSession = function getSession() {
+  return {};
+};
 
 /** Returns the current OpenTok session credentials */
-var getCredentials = void 0;
+var getCredentials = function getCredentials() {
+  return {};
+};
 
 var createEventListeners = function createEventListeners(session) {
   /**
    * Register OpenTok session events internally
    */
-  registerEvents(accPackEvents.session);
+  registerEvents(sdkWrapperEvents.session);
 
   /**
    * Wrap session events and update state when streams are created
    * or destroyed
    */
-  accPackEvents.session.forEach(function (eventName) {
+  sdkWrapperEvents.session.forEach(function (eventName) {
     session.on(eventName, function (event) {
       if (eventName === 'streamCreated') {
-        state.addStream(event.stream);
+        internalState.addStream(event.stream);
       }
       if (eventName === 'streamDestroyed') {
-        state.removeStream(event.stream);
+        internalState.removeStream(event.stream);
       }
       triggerEvent(eventName, event);
     });
   });
 };
 
-var createPublisher = function createPublisher(container, options) {
+var publish = function publish(publisher) {
   return new Promise(function (resolve, reject) {
-    var publisher = OT.initPublisher(container, options, function (error) {
-      error ? reject(error) : resolve(publisher);
-    });
-  });
-};
-
-var publish = function publish(container, options) {
-  return new Promise(function (resolve, reject) {
-    createPublisher(container, options).then(function (publisher) {
-      state.addPublisher(publisher.stream.videoType, publisher);
-      getSession().publish(publisher, resolve);
-    }).catch(function (error) {
-      var errorMessage = error.code === 1010 ? 'Check your network connection' : error.message;
-      reject(errorMessage);
+    getSession().publish(publisher, function (error) {
+      error && reject(error);
+      var type = publisher.stream.videoType;
+      internalState.addPublisher(type, publisher);
+      resolve();
     });
   });
 };
@@ -152,7 +146,7 @@ var publish = function publish(container, options) {
 var unpublish = function unpublish(publisher) {
   var type = publisher.stream.videoType;
   getSession().unpublish(publisher);
-  state.removePublisher(type, publisher);
+  internalState.removePublisher(type, publisher);
 };
 
 var subscribe = function subscribe(stream, container, options) {
@@ -161,7 +155,7 @@ var subscribe = function subscribe(stream, container, options) {
       if (error) {
         reject(error);
       } else {
-        state.addSubscriber(subscriber);
+        internalState.addSubscriber(subscriber);
         resolve();
       }
     });
@@ -176,7 +170,7 @@ var subscribe = function subscribe(stream, container, options) {
 var unsubscribe = function unsubscribe(subscriber) {
   return new Promise(function (resolve) {
     getSession().unsubscribe(subscriber);
-    state.removeSubscriber(subscriber);
+    internalState.removeSubscriber(subscriber);
     resolve();
   });
 };
@@ -199,6 +193,18 @@ var validateCredentials = function validateCredentials() {
   });
 };
 
+var connect = function connect() {
+  return new Promise(function (resolve, reject) {
+    var _getCredentials = getCredentials();
+
+    var token = _getCredentials.token;
+
+    getSession().connect(token, function (error) {
+      error ? reject(error) : resolve();
+    });
+  });
+};
+
 /**
  * Initialize the accelerator pack
  * @param {Object} options
@@ -218,8 +224,30 @@ var init = function init(credentials) {
   };
 };
 
+/**
+ * Return the state of the OpenTok session
+ * @returns {Object} Streams, publishers, subscribers, and stream map
+ */
+var state = function state() {
+  return internalState.all();
+};
+
+/**
+ * Initialize an OpenTok publisher object
+ * @param {String | Object} element - The target element
+ * @param {Object} properties - The publisher properties
+ * @returns {Promise} <resolve: Object, reject: Error>
+ */
+var initPublisher = function initPublisher(element, properties) {
+  return new Promise(function (resolve, reject) {
+    var publisher = OT.initPublisher(element, properties, function (error) {
+      error ? reject(error) : resolve(publisher);
+    });
+  });
+};
+
 var opentokSDK = {
-  connect: getSession().connect,
+  connect: connect,
   disconnect: getSession().disconnect,
   forceDisconnect: getSession().forceDisconnect,
   forceUnpublish: getSession().forceUnpublish,
@@ -227,10 +255,12 @@ var opentokSDK = {
   getPublisherForStream: getSession().getPublisherForStream,
   getSubscribersForStream: getSession().getSubscribersForStream,
   init: init,
+  initPublisher: initPublisher,
   off: off,
   on: on,
   publish: publish,
   signal: getSession().signal,
+  state: state,
   subscribe: subscribe,
   unpublish: unpublish,
   unsubscribe: unsubscribe

@@ -3,8 +3,8 @@
  * Dependencies
  */
 const logging = require('./logging');
-const accPackEvents = require('./events');
-const state = require('./state');
+const sdkWrapperEvents = require('./events');
+const internalState = require('./state');
 
 /** Eventing */
 
@@ -14,7 +14,6 @@ const registeredEvents = {};
  * Register events that can be listened to be other components/modules
  * @param {array | string} events - A list of event names. A single event may
  * also be passed as a string.
- * @returns {function} See triggerEvent
  */
 const registerEvents = events => {
   const eventList = Array.isArray(events) ? events : [events];
@@ -69,54 +68,47 @@ const triggerEvent = (event, data) => {
 };
 
 /** Returns the current OpenTok session object */
-let getSession;
+let getSession = () => ({});
 
 /** Returns the current OpenTok session credentials */
-let getCredentials;
+let getCredentials = () => ({});
 
 const createEventListeners = session => {
   /**
    * Register OpenTok session events internally
    */
-  registerEvents(accPackEvents.session);
+  registerEvents(sdkWrapperEvents.session);
 
   /**
    * Wrap session events and update state when streams are created
    * or destroyed
    */
-  accPackEvents.session.forEach(eventName => {
+  sdkWrapperEvents.session.forEach(eventName => {
     session.on(eventName, event => {
       if (eventName === 'streamCreated') {
-        state.addStream(event.stream);
+        internalState.addStream(event.stream);
       }
       if (eventName === 'streamDestroyed') {
-        state.removeStream(event.stream);
+        internalState.removeStream(event.stream);
       }
       triggerEvent(eventName, event);
     });
   });
 };
 
-const createPublisher = (container, options) => new Promise((resolve, reject) => {
-  const publisher = OT.initPublisher(container, options, error => {
-    error ? reject(error) : resolve(publisher);
-  });
-});
-
-const publish = (container, options) => new Promise((resolve, reject) => {
-  createPublisher(container, options).then(publisher => {
-    state.addPublisher(publisher.stream.videoType, publisher);
-    getSession().publish(publisher, resolve);
-  }).catch(error => {
-    const errorMessage = error.code === 1010 ? 'Check your network connection' : error.message;
-    reject(errorMessage);
+const publish = publisher => new Promise((resolve, reject) => {
+  getSession().publish(publisher, error => {
+    error && reject(error);
+    const type = publisher.stream.videoType;
+    internalState.addPublisher(type, publisher);
+    resolve();
   });
 });
 
 const unpublish = publisher => {
   const type = publisher.stream.videoType;
   getSession().unpublish(publisher);
-  state.removePublisher(type, publisher);
+  internalState.removePublisher(type, publisher);
 };
 
 const subscribe = (stream, container, options) => new Promise((resolve, reject) => {
@@ -124,7 +116,7 @@ const subscribe = (stream, container, options) => new Promise((resolve, reject) 
     if (error) {
       reject(error);
     } else {
-      state.addSubscriber(subscriber);
+      internalState.addSubscriber(subscriber);
       resolve();
     }
   });
@@ -137,7 +129,7 @@ const subscribe = (stream, container, options) => new Promise((resolve, reject) 
  */
 const unsubscribe = subscriber => new Promise(resolve => {
   getSession().unsubscribe(subscriber);
-  state.removeSubscriber(subscriber);
+  internalState.removeSubscriber(subscriber);
   resolve();
 });
 
@@ -157,6 +149,13 @@ const validateCredentials = (credentials = []) => {
   });
 };
 
+const connect = () => new Promise((resolve, reject) => {
+  const { token } = getCredentials();
+  getSession().connect(token, error => {
+    error ? reject(error) : resolve();
+  });
+});
+
 /**
  * Initialize the accelerator pack
  * @param {Object} options
@@ -172,8 +171,26 @@ const init = credentials => {
   getCredentials = () => credentials;
 };
 
+/**
+ * Return the state of the OpenTok session
+ * @returns {Object} Streams, publishers, subscribers, and stream map
+ */
+const state = () => internalState.all();
+
+/**
+ * Initialize an OpenTok publisher object
+ * @param {String | Object} element - The target element
+ * @param {Object} properties - The publisher properties
+ * @returns {Promise} <resolve: Object, reject: Error>
+ */
+const initPublisher = (element, properties) => new Promise((resolve, reject) => {
+  const publisher = OT.initPublisher(element, properties, error => {
+    error ? reject(error) : resolve(publisher);
+  });
+});
+
 const opentokSDK = {
-  connect: getSession().connect,
+  connect,
   disconnect: getSession().disconnect,
   forceDisconnect: getSession().forceDisconnect,
   forceUnpublish: getSession().forceUnpublish,
@@ -181,10 +198,12 @@ const opentokSDK = {
   getPublisherForStream: getSession().getPublisherForStream,
   getSubscribersForStream: getSession().getSubscribersForStream,
   init,
+  initPublisher,
   off,
   on,
   publish,
   signal: getSession().signal,
+  state,
   subscribe,
   unpublish,
   unsubscribe

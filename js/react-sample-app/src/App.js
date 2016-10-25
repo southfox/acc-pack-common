@@ -4,65 +4,25 @@ import React, { Component } from 'react';
 import Spinner from 'react-spinner';
 import classNames from 'classnames';
 import logo from './logo.svg';
-import otCore from './ot-sdk-wrapper/sdkWrapper.js';
+import otSDK from './ot-sdk-wrapper/sdkWrapper.js';
 import config from './config.json';
 import './App.css';
 import 'opentok-solutions-css';
 
-const otCoreOptions = {
-  credentials: {
-    apiKey: config.apiKey,
-    sessionId: config.sessionId,
-    token: config.token,
-  },
-  // A container can either be a query selector or an HTMLElement
-  containers: {
-    publisher: {
-      camera: '#cameraPublisherContainer',
-      screen: '#screenPublisherContainer',
-    },
-    subscriber: {
-      camera: '#cameraSubscriberContainer',
-      screen: '#screenSubscriberContainer',
-    },
-    controls: '#controls',
-    chat: '#chat',
-  },
-  packages: ['textChat', 'screenSharing', 'annotation', 'archiving'],
-  communication: {
-    callProperites: null, // Using default
-  },
-  textChat: {
-    name: ['David', 'Paul', 'Emma', 'George', 'Amanda'][Math.random() * 5 | 0],
-    waitingMessage: 'Messages will be delivered when other users arrive',
-  },
-  screenSharing: {
-    extensionID: 'plocfffmbcclpdifaikiikgplfnepkpo',
-    annotation: true,
-    externalWindow: false,
-    dev: true,
-    screenProperties: {
-      insertMode: 'append',
-      width: '100%',
-      height: '100%',
-      showControls: false,
-      style: {
-        buttonDisplayMode: 'off',
-      },
-      videoSource: 'window',
-      fitMode: 'contain' // Using default
-    },
-  },
-  annotation: {
-    absoluteParent: {
-      publisher: '.App-video-container',
-      subscriber: '.App-video-container'
-    }
-  },
-  archiving: {
-    startURL: 'https://example.com/startArchive',
-    stopURL: 'https://example.com/stopArchive',
-  },
+const credentials = {
+  apiKey: config.apiKey,
+  sessionId: config.sessionId,
+  token: config.token,
+};
+
+const callProperties = {
+  insertMode: 'append',
+  width: '100%',
+  height: '100%',
+  showControls: false,
+  style: {
+    buttonDisplayMode: 'off'
+  }
 };
 
 /**
@@ -78,7 +38,7 @@ const containerClasses = (state) => {
     controlClass: classNames('App-control-container', { 'hidden': !active }),
     localAudioClass: classNames('ots-video-control circle audio', { 'muted': !localAudioEnabled }),
     localVideoClass: classNames('ots-video-control circle video', { 'muted': !localVideoEnabled }),
-    cameraPublisherClass: classNames('video-container', { 'hidden' : !active, 'small': !!activeCameraSubscribers || sharingScreen, 'left': sharingScreen || viewingSharedScreen }),
+    cameraPublisherClass: classNames('video-container', { 'hidden': !active, 'small': !!activeCameraSubscribers || sharingScreen, 'left': sharingScreen || viewingSharedScreen }),
     screenPublisherClass: classNames('video-container', { 'hidden': !sharingScreen }),
     cameraSubscriberClass: classNames('video-container', { 'hidden': !activeCameraSubscribers },
       `active-${activeCameraSubscribers}`, { 'small': viewingSharedScreen || sharingScreen }
@@ -117,9 +77,11 @@ class App extends Component {
   }
 
   componentDidMount() {
-    otCore.init(otCoreOptions);
-    otCore.connect().then(() => this.setState({ connected: true }));
+    otSDK.init(credentials);
+    otSDK.connect().then(() => this.setState({ connected: true }));
     const events = [
+      'streamCreated',
+      'streamDestroyed',
       'subscribeToCamera',
       'unsubscribeFromCamera',
       'subscribeToScreen',
@@ -128,26 +90,36 @@ class App extends Component {
       'endScreenShare',
     ];
 
-    events.forEach(event => otCore.on(event, ({ publishers, subscribers, meta }) => {
-      this.setState({ publishers, subscribers, meta });
-    }));
+    //TODO subscribe to existing streams
+
+    otSDK.on('streamCreated', ({ stream }) => {
+      const type = stream.videoType;
+      otSDK.subscribe(stream, `${type}SubscriberContainer`, callProperties);
+      this.setState(otSDK.state());
+    });
+
+    otSDK.on('streamDestroyed', ({ stream }) => {
+      this.setState(otSDK.state());
+    });
+
   }
 
   startCall() {
     this.setState({ active: true });
-    otCore.startCall()
-      .then(({ publishers, subscribers, meta }) => {
-        this.setState({ publishers, subscribers, meta });
+    otSDK.initPublisher('cameraPublisherContainer', callProperties)
+      .then(publisher => {
+        otSDK.publish(publisher);
+        this.setState(otSDK.state())
       }).catch(error => console.log(error));
   }
 
   toggleLocalAudio() {
-    otCore.toggleLocalAudio(!this.state.localAudioEnabled);
+    otSDK.toggleLocalAudio(!this.state.localAudioEnabled);
     this.setState({ localAudioEnabled: !this.state.localAudioEnabled });
   }
 
   toggleLocalVideo() {
-    otCore.toggleLocalVideo(!this.state.localVideoEnabled);
+    otSDK.toggleLocalVideo(!this.state.localVideoEnabled);
     this.setState({ localVideoEnabled: !this.state.localVideoEnabled });
   }
 
