@@ -171,6 +171,7 @@ const init = (credentials) => {
   createEventListeners(session);
   getSession = () => session;
   getCredentials = () => credentials;
+  return session;
 };
 
 /**
