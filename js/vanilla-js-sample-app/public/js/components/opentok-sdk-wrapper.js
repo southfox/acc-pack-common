@@ -222,6 +222,7 @@ var init = function init(credentials) {
   getCredentials = function getCredentials() {
     return credentials;
   };
+  return session;
 };
 
 /**
