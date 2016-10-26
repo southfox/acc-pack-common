@@ -3,7 +3,7 @@
  * Dependencies
  */
 const logging = require('./logging');
-const sdkWrapperEvents = require('./events');
+const sessionEvents = require('./events');
 const internalState = require('./state');
 
 /** Eventing */
@@ -11,17 +11,13 @@ const internalState = require('./state');
 const registeredEvents = {};
 
 /**
- * Register events that can be listened to be other components/modules
- * @param {array | string} events - A list of event names. A single event may
- * also be passed as a string.
+ * Register a callback for a specific event
+ * @param {String} event - The name of the event
+ * @param {Function} callback
  */
-const registerEvents = (events) => {
-  const eventList = Array.isArray(events) ? events : [events];
-  eventList.forEach((event) => {
-    if (!registeredEvents[event]) {
-      registeredEvents[event] = new Set();
-    }
-  });
+const on = (event, callback) => {
+  registeredEvents[event] = registeredEvents[event] || new Set();
+  registeredEvents[event].add(callback);
 };
 
 /**
@@ -39,20 +35,6 @@ const off = (event, callback) => {
 };
 
 /**
- * Register a callback for a specific event
- * @param {String} event - The name of the event
- * @param {Function} callback
- */
-const on = (event, callback) => {
-  const eventCallbacks = registeredEvents[event];
-  if (!eventCallbacks) {
-    logging.message(`${event} is not a registered event.`);
-  } else {
-    eventCallbacks.add(callback);
-  }
-};
-
-/**
  * Trigger an event and fire all registered callbacks
  * @param {String} event - The name of the event
  * @param {*} data - Data to be passed to callback functions
@@ -60,30 +42,27 @@ const on = (event, callback) => {
 const triggerEvent = (event, data) => {
   const eventCallbacks = registeredEvents[event];
   if (!eventCallbacks) {
-    registerEvents(event);
-    logging.message(`${event} has been registered as a new event.`);
+    logging.message(`${event} is not a registered event.`);
   } else {
     eventCallbacks.forEach(callback => callback(data, event));
   }
 };
 
 /** Returns the current OpenTok session object */
-let getSession = () => ({});
+let getSession = internalState.getSession;
 
 /** Returns the current OpenTok session credentials */
-let getCredentials = () => ({});
+let getCredentials = internalState.getCredentials;
 
+/**
+ *
+ */
 const createEventListeners = (session) => {
-  /**
-   * Register OpenTok session events internally
-   */
-  registerEvents(sdkWrapperEvents.session);
-
   /**
    * Wrap session events and update state when streams are created
    * or destroyed
    */
-  sdkWrapperEvents.session.forEach((eventName) => {
+  sessionEvents.forEach((eventName) => {
     session.on(eventName, (event) => {
       if (eventName === 'streamCreated') { internalState.addStream(event.stream); }
       if (eventName === 'streamDestroyed') { internalState.removeStream(event.stream); }
@@ -93,6 +72,11 @@ const createEventListeners = (session) => {
 };
 
 
+/**
+ * Publishing a stream
+ * @param {Object} publisher - An OpenTok publisher object
+ * @returns {Promise} <resolve: empty, reject: Error>
+ */
 const publish = publisher =>
   new Promise((resolve, reject) => {
     getSession().publish(publisher, (error) => {
@@ -104,12 +88,24 @@ const publish = publisher =>
   });
 
 
+/**
+ * Stop publishing a stream
+ * @param {Object} publisher - An OpenTok publisher object
+ */
 const unpublish = (publisher) => {
   const type = publisher.stream.videoType;
   getSession().unpublish(publisher);
   internalState.removePublisher(type, publisher);
 };
 
+
+/**
+ * Subscribe to stream
+ * @param {Object} stream
+ * @param {String | Object} container - The id of the container or a reference to the element
+ * @param {Object} [options]
+ * @returns {Promise} <resolve: empty, reject: Error>
+ */
 const subscribe = (stream, container, options) =>
   new Promise((resolve, reject) => {
     const subscriber = getSession().subscribe(stream, container, options, (error) => {
@@ -150,6 +146,10 @@ const validateCredentials = (credentials = []) => {
   });
 };
 
+/**
+ * Connect to the OpenTok session
+ * @returns {Promise} <resolve: empty, reject: Error>
+ */
 const connect = () =>
   new Promise((resolve, reject) => {
     const { token } = getCredentials();
@@ -168,6 +168,8 @@ const connect = () =>
 const init = (credentials) => {
   validateCredentials(credentials);
   const session = OT.initSession(credentials.apiKey, credentials.sessionId);
+  internalState.setSession(session);
+  internalState.setCredentials(credentials);
   createEventListeners(session);
   getSession = () => session;
   getCredentials = () => credentials;
@@ -193,20 +195,34 @@ const initPublisher = (element, properties) =>
     });
   });
 
+/**
+ * Wrapper for syncronous session methods that ensures an OpenTok
+ * session is available before invoking the method.
+ * @param {String} method - The OpenTok session method
+ * @params {Array} [args]
+ */
+const sessionMethods = (method, ...args) => {
+  const session = getSession();
+  if (!session) {
+    logging.message(`Could not call ${method}. No OpenTok session is available`);
+  }
+  return session[method](...args);
+};
+
 const opentokSDK = {
   connect,
-  disconnect: getSession().disconnect,
-  forceDisconnect: getSession().forceDisconnect,
-  forceUnpublish: getSession().forceUnpublish,
+  disconnect: (...args) => sessionMethods('forceDisconnect', ...args),
+  forceDisconnect: (...args) => sessionMethods('forceDisconnect', ...args),
+  forceUnpublish: (...args) => sessionMethods('forceUnpublish', ...args),
   getCredentials,
-  getPublisherForStream: getSession().getPublisherForStream,
-  getSubscribersForStream: getSession().getSubscribersForStream,
+  getPublisherForStream: (...args) => sessionMethods('getPublisherForStream', ...args),
+  getSubscribersForStream: (...args) => sessionMethods('getSubscribersForStream', ...args),
   init,
   initPublisher,
   off,
   on,
   publish,
-  signal: getSession().signal,
+  signal: (...args) => sessionMethods('signal', args),
   state,
   subscribe,
   unpublish,
