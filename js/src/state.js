@@ -16,7 +16,27 @@ const streams = {};
 // Map stream ids to subscriber/publisher ids
 const streamMap = {};
 
+/**
+ * Getters and setters for session and credentials
+ */
+let session = null;
+let credentials = null;
 
+// Get the current OpenTok session
+const getSession = () => session;
+
+// Set the current OpenTok session
+const setSession = (otSession) => {
+  session = otSession;
+};
+
+// Get the current OpenTok credentials
+const getCredentials = () => credentials;
+
+// Set the current OpenTok credentials
+const setCredentials = (otCredentials) => {
+  credentials = otCredentials;
+};
 
 /**
  * Returns the count of current publishers and subscribers by type
@@ -35,6 +55,7 @@ const streamMap = {};
  *   }
  */
 const pubSubCount = () => {
+  /* eslint-disable no-param-reassign */
   const pubs = Object.keys(publishers).reduce((acc, source) => {
     acc[source] = Object.keys(publishers[source]).length;
     acc.total += acc[source];
@@ -46,7 +67,7 @@ const pubSubCount = () => {
     acc.total += acc[source];
     return acc;
   }, { camera: 0, screen: 0, total: 0 });
-
+  /* eslint-enable no-param-reassign */
   return { publisher: pubs, subscriber: subs };
 };
 
@@ -100,6 +121,10 @@ const getStreams = () => streams;
 const all = () => Object.assign({}, currentPubSub(), { streams, streamMap });
 
 module.exports = {
+  setSession,
+  getSession,
+  setCredentials,
+  getCredentials,
   addStream,
   removeStream,
   getStreams,
