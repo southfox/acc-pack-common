@@ -1,9 +1,7 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
 
-var events = {
-  session: ['archiveStarted', 'archiveStopped', 'connectionCreated', 'connectionDestroyed', 'sessionConnected', 'sessionDisconnected', 'sessionReconnected', 'sessionReconnecting', 'signal', 'streamCreated', 'streamDestroyed', 'streamPropertyChanged']
-};
+var events = ['archiveStarted', 'archiveStopped', 'connectionCreated', 'connectionDestroyed', 'sessionConnected', 'sessionDisconnected', 'sessionReconnected', 'sessionReconnecting', 'signal', 'streamCreated', 'streamDestroyed', 'streamPropertyChanged'];
 
 module.exports = events;
 
@@ -33,7 +31,7 @@ module.exports = {
  * Dependencies
  */
 var logging = require('./logging');
-var sdkWrapperEvents = require('./events');
+var sessionEvents = require('./events');
 var internalState = require('./state');
 
 /** Eventing */
@@ -41,17 +39,13 @@ var internalState = require('./state');
 var registeredEvents = {};
 
 /**
- * Register events that can be listened to be other components/modules
- * @param {array | string} events - A list of event names. A single event may
- * also be passed as a string.
+ * Register a callback for a specific event
+ * @param {String} event - The name of the event
+ * @param {Function} callback
  */
-var registerEvents = function registerEvents(events) {
-  var eventList = Array.isArray(events) ? events : [events];
-  eventList.forEach(function (event) {
-    if (!registeredEvents[event]) {
-      registeredEvents[event] = new Set();
-    }
-  });
+var on = function on(event, callback) {
+  registeredEvents[event] = registeredEvents[event] || new Set();
+  registeredEvents[event].add(callback);
 };
 
 /**
@@ -69,20 +63,6 @@ var off = function off(event, callback) {
 };
 
 /**
- * Register a callback for a specific event
- * @param {String} event - The name of the event
- * @param {Function} callback
- */
-var on = function on(event, callback) {
-  var eventCallbacks = registeredEvents[event];
-  if (!eventCallbacks) {
-    logging.message(event + ' is not a registered event.');
-  } else {
-    eventCallbacks.add(callback);
-  }
-};
-
-/**
  * Trigger an event and fire all registered callbacks
  * @param {String} event - The name of the event
  * @param {*} data - Data to be passed to callback functions
@@ -90,8 +70,7 @@ var on = function on(event, callback) {
 var triggerEvent = function triggerEvent(event, data) {
   var eventCallbacks = registeredEvents[event];
   if (!eventCallbacks) {
-    registerEvents(event);
-    logging.message(event + ' has been registered as a new event.');
+    logging.message(event + ' is not a registered event.');
   } else {
     eventCallbacks.forEach(function (callback) {
       return callback(data, event);
@@ -100,26 +79,20 @@ var triggerEvent = function triggerEvent(event, data) {
 };
 
 /** Returns the current OpenTok session object */
-var getSession = function getSession() {
-  return {};
-};
+var getSession = internalState.getSession;
 
 /** Returns the current OpenTok session credentials */
-var getCredentials = function getCredentials() {
-  return {};
-};
+var getCredentials = internalState.getCredentials;
 
+/**
+ *
+ */
 var createEventListeners = function createEventListeners(session) {
-  /**
-   * Register OpenTok session events internally
-   */
-  registerEvents(sdkWrapperEvents.session);
-
   /**
    * Wrap session events and update state when streams are created
    * or destroyed
    */
-  sdkWrapperEvents.session.forEach(function (eventName) {
+  sessionEvents.forEach(function (eventName) {
     session.on(eventName, function (event) {
       if (eventName === 'streamCreated') {
         internalState.addStream(event.stream);
@@ -132,6 +105,11 @@ var createEventListeners = function createEventListeners(session) {
   });
 };
 
+/**
+ * Publishing a stream
+ * @param {Object} publisher - An OpenTok publisher object
+ * @returns {Promise} <resolve: empty, reject: Error>
+ */
 var publish = function publish(publisher) {
   return new Promise(function (resolve, reject) {
     getSession().publish(publisher, function (error) {
@@ -143,12 +121,23 @@ var publish = function publish(publisher) {
   });
 };
 
+/**
+ * Stop publishing a stream
+ * @param {Object} publisher - An OpenTok publisher object
+ */
 var unpublish = function unpublish(publisher) {
   var type = publisher.stream.videoType;
   getSession().unpublish(publisher);
   internalState.removePublisher(type, publisher);
 };
 
+/**
+ * Subscribe to stream
+ * @param {Object} stream
+ * @param {String | Object} container - The id of the container or a reference to the element
+ * @param {Object} [options]
+ * @returns {Promise} <resolve: empty, reject: Error>
+ */
 var subscribe = function subscribe(stream, container, options) {
   return new Promise(function (resolve, reject) {
     var subscriber = getSession().subscribe(stream, container, options, function (error) {
@@ -193,6 +182,10 @@ var validateCredentials = function validateCredentials() {
   });
 };
 
+/**
+ * Connect to the OpenTok session
+ * @returns {Promise} <resolve: empty, reject: Error>
+ */
 var connect = function connect() {
   return new Promise(function (resolve, reject) {
     var _getCredentials = getCredentials();
@@ -215,6 +208,8 @@ var connect = function connect() {
 var init = function init(credentials) {
   validateCredentials(credentials);
   var session = OT.initSession(credentials.apiKey, credentials.sessionId);
+  internalState.setSession(session);
+  internalState.setCredentials(credentials);
   createEventListeners(session);
   getSession = function getSession() {
     return session;
@@ -247,20 +242,74 @@ var initPublisher = function initPublisher(element, properties) {
   });
 };
 
+/**
+ * Wrapper for syncronous session methods that ensures an OpenTok
+ * session is available before invoking the method.
+ * @param {String} method - The OpenTok session method
+ * @params {Array} [args]
+ */
+var sessionMethods = function sessionMethods(method) {
+  for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    args[_key - 1] = arguments[_key];
+  }
+
+  var session = getSession();
+  if (!session) {
+    logging.message('Could not call ' + method + '. No OpenTok session is available');
+  }
+  return session[method].apply(session, args);
+};
+
 var opentokSDK = {
   connect: connect,
-  disconnect: getSession().disconnect,
-  forceDisconnect: getSession().forceDisconnect,
-  forceUnpublish: getSession().forceUnpublish,
+  disconnect: function disconnect() {
+    for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+      args[_key2] = arguments[_key2];
+    }
+
+    return sessionMethods.apply(undefined, ['forceDisconnect'].concat(args));
+  },
+  forceDisconnect: function forceDisconnect() {
+    for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+      args[_key3] = arguments[_key3];
+    }
+
+    return sessionMethods.apply(undefined, ['forceDisconnect'].concat(args));
+  },
+  forceUnpublish: function forceUnpublish() {
+    for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+      args[_key4] = arguments[_key4];
+    }
+
+    return sessionMethods.apply(undefined, ['forceUnpublish'].concat(args));
+  },
   getCredentials: getCredentials,
-  getPublisherForStream: getSession().getPublisherForStream,
-  getSubscribersForStream: getSession().getSubscribersForStream,
+  getPublisherForStream: function getPublisherForStream() {
+    for (var _len5 = arguments.length, args = Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
+      args[_key5] = arguments[_key5];
+    }
+
+    return sessionMethods.apply(undefined, ['getPublisherForStream'].concat(args));
+  },
+  getSubscribersForStream: function getSubscribersForStream() {
+    for (var _len6 = arguments.length, args = Array(_len6), _key6 = 0; _key6 < _len6; _key6++) {
+      args[_key6] = arguments[_key6];
+    }
+
+    return sessionMethods.apply(undefined, ['getSubscribersForStream'].concat(args));
+  },
   init: init,
   initPublisher: initPublisher,
   off: off,
   on: on,
   publish: publish,
-  signal: getSession().signal,
+  signal: function signal() {
+    for (var _len7 = arguments.length, args = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
+      args[_key7] = arguments[_key7];
+    }
+
+    return sessionMethods('signal', args);
+  },
   state: state,
   subscribe: subscribe,
   unpublish: unpublish,
@@ -296,6 +345,32 @@ var streams = {};
 var streamMap = {};
 
 /**
+ * Getters and setters for session and credentials
+ */
+var session = null;
+var credentials = null;
+
+// Get the current OpenTok session
+var getSession = function getSession() {
+  return session;
+};
+
+// Set the current OpenTok session
+var setSession = function setSession(otSession) {
+  session = otSession;
+};
+
+// Get the current OpenTok credentials
+var getCredentials = function getCredentials() {
+  return credentials;
+};
+
+// Set the current OpenTok credentials
+var setCredentials = function setCredentials(otCredentials) {
+  credentials = otCredentials;
+};
+
+/**
  * Returns the count of current publishers and subscribers by type
  * @retuns {Object}
  *    {
@@ -312,6 +387,7 @@ var streamMap = {};
  *   }
  */
 var pubSubCount = function pubSubCount() {
+  /* eslint-disable no-param-reassign */
   var pubs = Object.keys(publishers).reduce(function (acc, source) {
     acc[source] = Object.keys(publishers[source]).length;
     acc.total += acc[source];
@@ -323,7 +399,7 @@ var pubSubCount = function pubSubCount() {
     acc.total += acc[source];
     return acc;
   }, { camera: 0, screen: 0, total: 0 });
-
+  /* eslint-enable no-param-reassign */
   return { publisher: pubs, subscriber: subs };
 };
 
@@ -385,6 +461,10 @@ var all = function all() {
 };
 
 module.exports = {
+  setSession: setSession,
+  getSession: getSession,
+  setCredentials: setCredentials,
+  getCredentials: getCredentials,
   addStream: addStream,
   removeStream: removeStream,
   getStreams: getStreams,
