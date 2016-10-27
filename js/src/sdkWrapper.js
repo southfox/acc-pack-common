@@ -1,4 +1,5 @@
 /* global OT */
+
 /**
  * Dependencies
  */
@@ -182,6 +183,12 @@ class OpenTokSDK {
     });
   }
 
+
+  /**
+   * Force a remote connection to leave the session
+   * @param {Object} connection
+   * @returns {Promise} <resolve: empty, reject: Error>
+   */
   forceDisconnect(connection) {
     return new Promise((resolve, reject) => {
       this.session.forceDisconnect(connection, (error) => {
@@ -190,6 +197,12 @@ class OpenTokSDK {
     });
   }
 
+
+  /**
+   * Force the publisher of a stream to stop publishing the stream
+   * @param {Object} stream
+   * @returns {Promise} <resolve: empty, reject: Error>
+   */
   forceUnpublish(stream) {
     return new Promise((resolve, reject) => {
       this.session.forceUnpublish(stream, (error) => {
@@ -199,6 +212,11 @@ class OpenTokSDK {
   }
 
 
+  /**
+   * Send a signal using the OpenTok signaling apiKey
+   * @param {Object} signal
+   * @returns {Promise} <resolve: empty, reject: Error>
+   */
   signal(signal) {
     return new Promise((resolve, reject) => {
       this.session.signal(signal, (error) => {
@@ -207,6 +225,9 @@ class OpenTokSDK {
     });
   }
 
+  /**
+   * Disconnect from the OpenTok session
+   */
   disconnect() {
     this.session.disconnect();
     this.internalState.reset();
@@ -259,27 +280,6 @@ class OpenTokSDK {
     return this.session[method](arg);
   }
 }
-
-// const opentokSDK = {
-//   connect,
-//   disconnect: (...args) => sessionMethods('forceDisconnect', ...args),
-//   forceDisconnect: (...args) => sessionMethods('forceDisconnect', ...args),
-//   forceUnpublish: (...args) => sessionMethods('forceUnpublish', ...args),
-//   getCredentials,
-//   getPublisherForStream: (...args) => sessionMethods('getPublisherForStream', ...args),
-//   getSubscribersForStream: (...args) => sessionMethods('getSubscribersForStream', ...args),
-//   init,
-//   initPublisher,
-//   off,
-//   on,
-//   publish,
-//   signal: (...args) => sessionMethods('signal', args),
-//   state,
-//   subscribe,
-//   unpublish,
-//   unsubscribe,
-// };
-
 
 if (global === window) {
   window.OpenTokSDK = OpenTokSDK;

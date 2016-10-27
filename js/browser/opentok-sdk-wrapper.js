@@ -33,6 +33,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 /* global OT */
+
 /**
  * Dependencies
  */
@@ -268,6 +269,13 @@ var OpenTokSDK = function () {
         });
       });
     }
+
+    /**
+     * Force a remote connection to leave the session
+     * @param {Object} connection
+     * @returns {Promise} <resolve: empty, reject: Error>
+     */
+
   }, {
     key: 'forceDisconnect',
     value: function forceDisconnect(connection) {
@@ -279,6 +287,13 @@ var OpenTokSDK = function () {
         });
       });
     }
+
+    /**
+     * Force the publisher of a stream to stop publishing the stream
+     * @param {Object} stream
+     * @returns {Promise} <resolve: empty, reject: Error>
+     */
+
   }, {
     key: 'forceUnpublish',
     value: function forceUnpublish(stream) {
@@ -290,6 +305,13 @@ var OpenTokSDK = function () {
         });
       });
     }
+
+    /**
+     * Send a signal using the OpenTok signaling apiKey
+     * @param {Object} signal
+     * @returns {Promise} <resolve: empty, reject: Error>
+     */
+
   }, {
     key: 'signal',
     value: function signal(_signal) {
@@ -301,6 +323,11 @@ var OpenTokSDK = function () {
         });
       });
     }
+
+    /**
+     * Disconnect from the OpenTok session
+     */
+
   }, {
     key: 'disconnect',
     value: function disconnect() {
@@ -369,27 +396,6 @@ var OpenTokSDK = function () {
 
   return OpenTokSDK;
 }();
-
-// const opentokSDK = {
-//   connect,
-//   disconnect: (...args) => sessionMethods('forceDisconnect', ...args),
-//   forceDisconnect: (...args) => sessionMethods('forceDisconnect', ...args),
-//   forceUnpublish: (...args) => sessionMethods('forceUnpublish', ...args),
-//   getCredentials,
-//   getPublisherForStream: (...args) => sessionMethods('getPublisherForStream', ...args),
-//   getSubscribersForStream: (...args) => sessionMethods('getSubscribersForStream', ...args),
-//   init,
-//   initPublisher,
-//   off,
-//   on,
-//   publish,
-//   signal: (...args) => sessionMethods('signal', args),
-//   state,
-//   subscribe,
-//   unpublish,
-//   unsubscribe,
-// };
-
 
 if (global === window) {
   window.OpenTokSDK = OpenTokSDK;
