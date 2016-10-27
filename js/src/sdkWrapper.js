@@ -23,6 +23,19 @@ const validateCredentials = (credentials = []) => {
   });
 };
 
+/**
+ * Initialize an OpenTok publisher object
+ * @param {String | Object} element - The target element
+ * @param {Object} properties - The publisher properties
+ * @returns {Promise} <resolve: Object, reject: Error>
+ */
+const initPublisher = (element, properties) =>
+  new Promise((resolve, reject) => {
+    const publisher = OT.initPublisher(element, properties, (error) => {
+      error ? reject(error) : resolve(publisher);
+    });
+  });
+
 
 class OpenTokSDK {
   /**
@@ -72,12 +85,12 @@ class OpenTokSDK {
       this.session.on(event);
     }
   }
-    /**
-     * Remove a callback for a specific event. If no parameters are passed,
-     * all callbacks for the session will be removed.
-     * @param {String} event - The name of the event
-     * @param {Function} callback
-     */
+  /**
+   * Remove a callback for a specific event. If no parameters are passed,
+   * all callbacks for the session will be removed.
+   * @param {String} event - The name of the event
+   * @param {Function} callback
+   */
   off(event, callback) {
     if (arguments.length === 0) {
       this.eventListeners = {};
@@ -113,11 +126,26 @@ class OpenTokSDK {
   }
 
   /**
-   * Publishing a stream
+   * Create and publish a stream
+   * @param {String | Object} element - The target element
+   * @param {Object} properties - The publisher properties
+   * @param {Boolean} preview - Create a publisher with publishing to the session
+   * @returns {Promise} <resolve: Object, reject: Error>
+   */
+  publish(element, properties, preview) {
+    return new Promise((resolve, reject) => {
+      initPublisher(element, properties) // eslint-disable-next-line no-confusing-arrow
+        .then(publisher => preview ? resolve(publisher) : this.publishPreview(publisher))
+        .catch(reject);
+    });
+  }
+
+  /**
+   * Publish a 'preview' stream to the session
    * @param {Object} publisher - An OpenTok publisher object
    * @returns {Promise} <resolve: empty, reject: Error>
    */
-  publish(publisher) {
+  publishPreview(publisher) {
     return new Promise((resolve, reject) => {
       this.session.publish(publisher, (error) => {
         error && reject(error);
@@ -127,10 +155,10 @@ class OpenTokSDK {
       });
     });
   }
-    /**
-     * Stop publishing a stream
-     * @param {Object} publisher - An OpenTok publisher object
-     */
+  /**
+   * Stop publishing a stream
+   * @param {Object} publisher - An OpenTok publisher object
+   */
   unpublish(publisher) {
     const type = publisher.stream.videoType;
     this.session.unpublish(publisher);
@@ -242,20 +270,6 @@ class OpenTokSDK {
   }
 
   /**
-   * Initialize an OpenTok publisher object
-   * @param {String | Object} element - The target element
-   * @param {Object} properties - The publisher properties
-   * @returns {Promise} <resolve: Object, reject: Error>
-   */
-  initPublisher(element, properties) {
-    return new Promise((resolve, reject) => {
-      const publisher = OT.initPublisher(element, properties, (error) => {
-        error ? reject(error) : resolve(publisher);
-      });
-    });
-  }
-
-  /**
    * Wrapper for syncronous session methods that ensures an OpenTok
    * session is available before invoking the method.
    * @param {String} method - The OpenTok session method
@@ -275,8 +289,7 @@ class OpenTokSDK {
           error ? reject(error) : resolve();
         });
       });
-    }
-    !this.session && logging.error(noSessionError);
+    }!this.session && logging.error(noSessionError);
     return this.session[method](arg);
   }
 }

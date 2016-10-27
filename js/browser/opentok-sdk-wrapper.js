@@ -59,6 +59,20 @@ var validateCredentials = function validateCredentials() {
   });
 };
 
+/**
+ * Initialize an OpenTok publisher object
+ * @param {String | Object} element - The target element
+ * @param {Object} properties - The publisher properties
+ * @returns {Promise} <resolve: Object, reject: Error>
+ */
+var initPublisher = function initPublisher(element, properties) {
+  return new Promise(function (resolve, reject) {
+    var publisher = OT.initPublisher(element, properties, function (error) {
+      error ? reject(error) : resolve(publisher);
+    });
+  });
+};
+
 var OpenTokSDK = function () {
   /**
    * Initialize the SDK Wrapper
@@ -176,21 +190,42 @@ var OpenTokSDK = function () {
     }
 
     /**
-     * Publishing a stream
+     * Create and publish a stream
+     * @param {String | Object} element - The target element
+     * @param {Object} properties - The publisher properties
+     * @param {Boolean} preview - Create a publisher with publishing to the session
+     * @returns {Promise} <resolve: Object, reject: Error>
+     */
+
+  }, {
+    key: 'publish',
+    value: function publish(element, properties, preview) {
+      var _this2 = this;
+
+      return new Promise(function (resolve, reject) {
+        initPublisher(element, properties) // eslint-disable-next-line no-confusing-arrow
+        .then(function (publisher) {
+          return preview ? resolve(publisher) : _this2.publishPreview(publisher);
+        }).catch(reject);
+      });
+    }
+
+    /**
+     * Publish a 'preview' stream to the session
      * @param {Object} publisher - An OpenTok publisher object
      * @returns {Promise} <resolve: empty, reject: Error>
      */
 
   }, {
-    key: 'publish',
-    value: function publish(publisher) {
-      var _this2 = this;
+    key: 'publishPreview',
+    value: function publishPreview(publisher) {
+      var _this3 = this;
 
       return new Promise(function (resolve, reject) {
-        _this2.session.publish(publisher, function (error) {
+        _this3.session.publish(publisher, function (error) {
           error && reject(error);
           var type = publisher.stream.videoType;
-          _this2.internalState.addPublisher(type, publisher);
+          _this3.internalState.addPublisher(type, publisher);
           resolve();
         });
       });
@@ -219,14 +254,14 @@ var OpenTokSDK = function () {
   }, {
     key: 'subscribe',
     value: function subscribe(stream, container, options) {
-      var _this3 = this;
+      var _this4 = this;
 
       return new Promise(function (resolve, reject) {
-        var subscriber = _this3.session.subscribe(stream, container, options, function (error) {
+        var subscriber = _this4.session.subscribe(stream, container, options, function (error) {
           if (error) {
             reject(error);
           } else {
-            _this3.internalState.addSubscriber(subscriber);
+            _this4.internalState.addSubscriber(subscriber);
             resolve();
           }
         });
@@ -242,11 +277,11 @@ var OpenTokSDK = function () {
   }, {
     key: 'unsubscribe',
     value: function unsubscribe(subscriber) {
-      var _this4 = this;
+      var _this5 = this;
 
       return new Promise(function (resolve) {
-        _this4.session.unsubscribe(subscriber);
-        _this4.internalState.removeSubscriber(subscriber);
+        _this5.session.unsubscribe(subscriber);
+        _this5.internalState.removeSubscriber(subscriber);
         resolve();
       });
     }
@@ -259,12 +294,12 @@ var OpenTokSDK = function () {
   }, {
     key: 'connect',
     value: function connect() {
-      var _this5 = this;
+      var _this6 = this;
 
       return new Promise(function (resolve, reject) {
-        var token = _this5.credentials.token;
+        var token = _this6.credentials.token;
 
-        _this5.session.connect(token, function (error) {
+        _this6.session.connect(token, function (error) {
           error ? reject(error) : resolve();
         });
       });
@@ -279,10 +314,10 @@ var OpenTokSDK = function () {
   }, {
     key: 'forceDisconnect',
     value: function forceDisconnect(connection) {
-      var _this6 = this;
+      var _this7 = this;
 
       return new Promise(function (resolve, reject) {
-        _this6.session.forceDisconnect(connection, function (error) {
+        _this7.session.forceDisconnect(connection, function (error) {
           error ? reject(error) : resolve();
         });
       });
@@ -297,10 +332,10 @@ var OpenTokSDK = function () {
   }, {
     key: 'forceUnpublish',
     value: function forceUnpublish(stream) {
-      var _this7 = this;
+      var _this8 = this;
 
       return new Promise(function (resolve, reject) {
-        _this7.session.forceUnpublish(stream, function (error) {
+        _this8.session.forceUnpublish(stream, function (error) {
           error ? reject(error) : resolve();
         });
       });
@@ -315,10 +350,10 @@ var OpenTokSDK = function () {
   }, {
     key: 'signal',
     value: function signal(_signal) {
-      var _this8 = this;
+      var _this9 = this;
 
       return new Promise(function (resolve, reject) {
-        _this8.session.signal(_signal, function (error) {
+        _this9.session.signal(_signal, function (error) {
           error ? reject(error) : resolve();
         });
       });
@@ -347,23 +382,6 @@ var OpenTokSDK = function () {
     }
 
     /**
-     * Initialize an OpenTok publisher object
-     * @param {String | Object} element - The target element
-     * @param {Object} properties - The publisher properties
-     * @returns {Promise} <resolve: Object, reject: Error>
-     */
-
-  }, {
-    key: 'initPublisher',
-    value: function initPublisher(element, properties) {
-      return new Promise(function (resolve, reject) {
-        var publisher = OT.initPublisher(element, properties, function (error) {
-          error ? reject(error) : resolve(publisher);
-        });
-      });
-    }
-
-    /**
      * Wrapper for syncronous session methods that ensures an OpenTok
      * session is available before invoking the method.
      * @param {String} method - The OpenTok session method
@@ -374,7 +392,7 @@ var OpenTokSDK = function () {
   }, {
     key: 'sessionMethods',
     value: function sessionMethods(method, arg) {
-      var _this9 = this;
+      var _this10 = this;
 
       var asyncMethods = ['forceDisconnect', 'forceUnpublish', 'signal'];
       var noSessionError = 'Could not call ' + method + '. No OpenTok session is available';
@@ -383,13 +401,12 @@ var OpenTokSDK = function () {
       }
       if (asyncMethods.includes(method)) {
         return new Promise(function (resolve, reject) {
-          !_this9.session && reject(noSessionError);
-          _this9.session[method](arg, function (error) {
+          !_this10.session && reject(noSessionError);
+          _this10.session[method](arg, function (error) {
             error ? reject(error) : resolve();
           });
         });
-      }
-      !this.session && logging.error(noSessionError);
+      }!this.session && logging.error(noSessionError);
       return this.session[method](arg);
     }
   }]);
