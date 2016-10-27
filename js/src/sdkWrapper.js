@@ -66,11 +66,9 @@ class OpenTokSDK {
    */
   on(event, callback) {
     if (typeof event === 'string') {
-      this.registerListener(event, callback);
+      this.session.on(event, callback);
     } else if (typeof event === 'object') {
-      Object.keys(event).forEach((eventName) => {
-        this.registerListener(eventName, event[eventName]);
-      });
+      this.session.on(event);
     }
   }
     /**
@@ -102,7 +100,6 @@ class OpenTokSDK {
     if (!eventCallbacks) { return; }
     eventCallbacks.forEach(callback => callback(data, event));
   }
-
 
   /**
    * Register a callback for an event

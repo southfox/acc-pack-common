@@ -71,7 +71,7 @@ var OpenTokSDK = function () {
 
     validateCredentials(credentials);
     this.credentials = credentials;
-    this.registeredEvents = {};
+    this.eventListeners = {};
     this.internalState = new State();
     this.session = OT.initSession(credentials.apiKey, credentials.sessionId);
     this.createEventListeners();
@@ -115,14 +115,10 @@ var OpenTokSDK = function () {
   }, {
     key: 'on',
     value: function on(event, callback) {
-      var _this2 = this;
-
       if (typeof event === 'string') {
-        this.registerEvent(event, callback);
+        this.session.on(event, callback);
       } else if ((typeof event === 'undefined' ? 'undefined' : _typeof(event)) === 'object') {
-        Object.keys(event).forEach(function (eventName) {
-          _this2.registerEvent(eventName, event[eventName]);
-        });
+        this.session.on(event);
       }
     }
     /**
@@ -136,10 +132,10 @@ var OpenTokSDK = function () {
     key: 'off',
     value: function off(event, callback) {
       if (arguments.length === 0) {
-        this.registeredEvents = {};
+        this.eventListeners = {};
         return;
       }
-      var eventCallbacks = this.registeredEvents[event];
+      var eventCallbacks = this.eventListeners[event];
       if (!eventCallbacks) {
         logging.message(event + ' is not a registered event.');
       } else {
@@ -156,7 +152,7 @@ var OpenTokSDK = function () {
   }, {
     key: 'triggerEvent',
     value: function triggerEvent(event, data) {
-      var eventCallbacks = this.registeredEvents[event];
+      var eventCallbacks = this.eventListeners[event];
       if (!eventCallbacks) {
         return;
       }
@@ -172,10 +168,10 @@ var OpenTokSDK = function () {
      */
 
   }, {
-    key: 'registerEvent',
-    value: function registerEvent(event, callback) {
-      this.registeredEvents[event] = this.registeredEvents[event] || new Set();
-      this.registeredEvents[event].add(callback);
+    key: 'registerListener',
+    value: function registerListener(event, callback) {
+      this.eventListeners[event] = this.eventListeners[event] || new Set();
+      this.eventListeners[event].add(callback);
     }
 
     /**
@@ -187,13 +183,13 @@ var OpenTokSDK = function () {
   }, {
     key: 'publish',
     value: function publish(publisher) {
-      var _this3 = this;
+      var _this2 = this;
 
       return new Promise(function (resolve, reject) {
-        _this3.session.publish(publisher, function (error) {
+        _this2.session.publish(publisher, function (error) {
           error && reject(error);
           var type = publisher.stream.videoType;
-          _this3.internalState.addPublisher(type, publisher);
+          _this2.internalState.addPublisher(type, publisher);
           resolve();
         });
       });
@@ -222,14 +218,14 @@ var OpenTokSDK = function () {
   }, {
     key: 'subscribe',
     value: function subscribe(stream, container, options) {
-      var _this4 = this;
+      var _this3 = this;
 
       return new Promise(function (resolve, reject) {
-        var subscriber = _this4.session.subscribe(stream, container, options, function (error) {
+        var subscriber = _this3.session.subscribe(stream, container, options, function (error) {
           if (error) {
             reject(error);
           } else {
-            _this4.internalState.addSubscriber(subscriber);
+            _this3.internalState.addSubscriber(subscriber);
             resolve();
           }
         });
@@ -245,11 +241,11 @@ var OpenTokSDK = function () {
   }, {
     key: 'unsubscribe',
     value: function unsubscribe(subscriber) {
-      var _this5 = this;
+      var _this4 = this;
 
       return new Promise(function (resolve) {
-        _this5.session.unsubscribe(subscriber);
-        _this5.internalState.removeSubscriber(subscriber);
+        _this4.session.unsubscribe(subscriber);
+        _this4.internalState.removeSubscriber(subscriber);
         resolve();
       });
     }
@@ -262,12 +258,12 @@ var OpenTokSDK = function () {
   }, {
     key: 'connect',
     value: function connect() {
-      var _this6 = this;
+      var _this5 = this;
 
       return new Promise(function (resolve, reject) {
-        var token = _this6.credentials.token;
+        var token = _this5.credentials.token;
 
-        _this6.session.connect(token, function (error) {
+        _this5.session.connect(token, function (error) {
           error ? reject(error) : resolve();
         });
       });

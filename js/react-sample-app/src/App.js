@@ -106,7 +106,7 @@ class App extends Component {
       .then(() => this.setState(otSDK.state()));
     };
 
-    // Subscribe to initial stream
+    // Subscribe to initial streams
     session.streams.forEach(subscribeToStream);
 
     const eventHandlers = {
