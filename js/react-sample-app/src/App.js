@@ -4,7 +4,7 @@ import React, { Component } from 'react';
 import Spinner from 'react-spinner';
 import classNames from 'classnames';
 import logo from './logo.svg';
-import otSDK from './ot-sdk-wrapper/sdkWrapper.js';
+import OpenTokSDK from './ot-sdk-wrapper/sdkWrapper.js';
 import config from './config.json';
 import './App.css';
 import 'opentok-solutions-css';
@@ -58,6 +58,8 @@ const startCallMask = start =>
     <div className="message button clickable" onClick={start}>Click to Start Call</div>
   </div>;
 
+const otSDK = new OpenTokSDK(credentials);
+
 class App extends Component {
 
   constructor(props) {
@@ -80,7 +82,7 @@ class App extends Component {
   }
 
   componentDidMount() {
-    const session = otSDK.init(credentials);
+    const session = otSDK.session;
     otSDK.connect().then(() => this.setState({ session, connected: true }));
     const events = [
       'streamCreated',

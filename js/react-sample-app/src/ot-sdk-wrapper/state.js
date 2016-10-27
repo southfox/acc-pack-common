@@ -1,137 +1,139 @@
-// Map publisher ids to publisher objects
-const publishers = {
-  camera: {},
-  screen: {}
-};
+class State {
+  constructor() {
+    // Map publisher ids to publisher objects
+    this.publishers = {
+      camera: {},
+      screen: {}
+    };
 
-// Map subscriber id to subscriber objects
-const subscribers = {
-  camera: {},
-  screen: {}
-};
+    // Map subscriber id to subscriber objects
+    this.subscribers = {
+      camera: {},
+      screen: {}
+    };
 
-// Map stream ids to stream objects
-const streams = {};
+    // Map stream ids to stream objects
+    this.streams = {};
 
-// Map stream ids to subscriber/publisher ids
-const streamMap = {};
+    // Map stream ids to subscriber/publisher ids
+    this.streamMap = {};
 
-/**
- * Getters and setters for session and credentials
- */
-let session = null;
-let credentials = null;
+    // OpenTok session
+    this.session = null;
 
-// Get the current OpenTok session
-const getSession = () => session;
+    // OpenTok credentials
+    this.credentials = null;
+  }
 
-// Set the current OpenTok session
-const setSession = otSession => {
-  session = otSession;
-};
+  // Get the current OpenTok session
+  getSession() {
+    return this.session;
+  }
 
-// Get the current OpenTok credentials
-const getCredentials = () => credentials;
+  // Set the current OpenTok session
+  setSession(session) {
+    this.session = session;
+  }
 
-// Set the current OpenTok credentials
-const setCredentials = otCredentials => {
-  credentials = otCredentials;
-};
+  // Get the current OpenTok credentials
+  getCredentials() {
+    return this.credentials;
+  }
+  // Set the current OpenTok credentials
+  setCredentials(credentials) {
+    this.credentials = credentials;
+  }
 
-/**
- * Returns the count of current publishers and subscribers by type
- * @retuns {Object}
- *    {
- *      publishers: {
- *        camera: 1,
- *        screen: 1,
- *        total: 2
- *      },
- *      subscribers: {
- *        camera: 3,
- *        screen: 1,
- *        total: 4
- *      }
- *   }
- */
-const pubSubCount = () => {
-  /* eslint-disable no-param-reassign */
-  const pubs = Object.keys(publishers).reduce((acc, source) => {
-    acc[source] = Object.keys(publishers[source]).length;
-    acc.total += acc[source];
-    return acc;
-  }, { camera: 0, screen: 0, total: 0 });
+  /**
+   * Returns the count of current publishers and subscribers by type
+   * @retuns {Object}
+   *    {
+   *      publishers: {
+   *        camera: 1,
+   *        screen: 1,
+   *        total: 2
+   *      },
+   *      subscribers: {
+   *        camera: 3,
+   *        screen: 1,
+   *        total: 4
+   *      }
+   *   }
+   */
+  pubSubCount() {
+    const { publishers, subscribers } = this;
+    /* eslint-disable no-param-reassign */
+    const pubs = Object.keys(publishers).reduce((acc, source) => {
+      acc[source] = Object.keys(publishers[source]).length;
+      acc.total += acc[source];
+      return acc;
+    }, { camera: 0, screen: 0, total: 0 });
 
-  const subs = Object.keys(subscribers).reduce((acc, source) => {
-    acc[source] = Object.keys(subscribers[source]).length;
-    acc.total += acc[source];
-    return acc;
-  }, { camera: 0, screen: 0, total: 0 });
-  /* eslint-enable no-param-reassign */
-  return { publisher: pubs, subscriber: subs };
-};
+    const subs = Object.keys(subscribers).reduce((acc, source) => {
+      acc[source] = Object.keys(subscribers[source]).length;
+      acc.total += acc[source];
+      return acc;
+    }, { camera: 0, screen: 0, total: 0 });
+    /* eslint-enable no-param-reassign */
+    return { publisher: pubs, subscriber: subs };
+  }
 
-/**
- * Returns the current publishers and subscribers, along with a count of each
- */
-const currentPubSub = () => ({ publishers, subscribers, meta: pubSubCount() });
+  /**
+   * Returns the current publishers and subscribers, along with a count of each
+   */
+  currentPubSub() {
+    const { publishers, subscribers } = this;
+    return { publishers, subscribers, meta: this.pubSubCount() };
+  }
 
-const addPublisher = (type, publisher) => {
-  streamMap[publisher.streamId] = publisher.id;
-  publishers[type][publisher.id] = publisher;
-};
+  addPublisher(type, publisher) {
+    this.streamMap[publisher.streamId] = publisher.id;
+    this.publishers[type][publisher.id] = publisher;
+  }
 
-const removePublisher = (type, publisher) => {
-  const id = publisher.id || streamMap[publisher.streamId];
-  delete publishers[type][id];
-};
+  removePublisher(type, publisher) {
+    const id = publisher.id || this.streamMap[publisher.streamId];
+    delete this.publishers[type][id];
+  }
 
-const removeAllPublishers = () => {
-  publishers.camera = {};
-  publishers.screen = {};
-};
+  removeAllPublishers() {
+    this.publishers.camera = {};
+    this.publishers.screen = {};
+  }
 
-const addSubscriber = subscriber => {
-  const type = subscriber.stream.videoType;
-  const streamId = subscriber.stream.id;
-  subscribers[type][subscriber.id] = subscriber;
-  streamMap[streamId] = subscriber.id;
-};
+  addSubscriber(subscriber) {
+    const type = subscriber.stream.videoType;
+    const streamId = subscriber.stream.id;
+    this.subscribers[type][subscriber.id] = subscriber;
+    this.streamMap[streamId] = subscriber.id;
+  }
 
-const removeSubscriber = (subscriber = {}) => {
-  const { stream } = subscriber;
-  const type = stream && stream.videoType;
-  delete subscribers[type][subscriber.id];
-};
+  removeSubscriber(subscriber = {}) {
+    const { stream } = subscriber;
+    const type = stream && stream.videoType;
+    delete this.subscribers[type][subscriber.id];
+  }
 
-const addStream = stream => {
-  streams[stream.id] = stream;
-};
+  addStream(stream) {
+    this.streams[stream.id] = stream;
+  }
 
-const removeStream = stream => {
-  const type = stream.videoType;
-  const subscriberId = streamMap[stream.id];
-  delete streamMap[stream.id];
-  delete streams[stream.id];
-  removeSubscriber(subscribers[type][subscriberId]);
-};
+  removeStream(stream) {
+    const type = stream.videoType;
+    const subscriberId = this.streamMap[stream.id];
+    delete this.streamMap[stream.id];
+    delete this.streams[stream.id];
+    this.removeSubscriber(this.subscribers[type][subscriberId]);
+  }
 
-const getStreams = () => streams;
+  getStreams() {
+    return this.streams;
+  }
 
-const all = () => Object.assign({}, currentPubSub(), { streams, streamMap });
+  all() {
+    const { streams, streamMap } = this;
+    return Object.assign({}, this.currentPubSub(), { streams, streamMap });
+  }
+}
 
-module.exports = {
-  setSession,
-  getSession,
-  setCredentials,
-  getCredentials,
-  addStream,
-  removeStream,
-  getStreams,
-  addPublisher,
-  removePublisher,
-  removeAllPublishers,
-  addSubscriber,
-  currentPubSub,
-  all
-};
+module.exports = State;
