@@ -109,11 +109,14 @@ class App extends Component {
     // Subscribe to initial stream
     session.streams.forEach(subscribeToStream);
 
-    // Subscribe to new streams
-    otSDK.on('streamCreated', ({ stream }) => subscribeToStream(stream));
+    const eventHandlers = {
+      // Subscribe to new streams
+      'streamCreated' : ({ stream }) => subscribeToStream(stream),
+      // Update state when streams are destroyed
+      'streamDestroyed': ({ stream }) => this.setState(otSDK.state())
+    };
 
-    // Update state when streams are destroyed
-    otSDK.on('streamDestroyed', ({ stream }) => this.setState(otSDK.state()));
+    otSDK.on(eventHandlers);
 
     // Publish local camera stream
     otSDK.initPublisher('cameraPublisherContainer', callProperties)
