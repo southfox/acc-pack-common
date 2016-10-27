@@ -380,35 +380,6 @@ var OpenTokSDK = function () {
     value: function state() {
       return this.internalState.all();
     }
-
-    /**
-     * Wrapper for syncronous session methods that ensures an OpenTok
-     * session is available before invoking the method.
-     * @param {String} method - The OpenTok session method
-     * @params {Array} [args]
-     * @returns {Promise}
-     */
-
-  }, {
-    key: 'sessionMethods',
-    value: function sessionMethods(method, arg) {
-      var _this10 = this;
-
-      var asyncMethods = ['forceDisconnect', 'forceUnpublish', 'signal'];
-      var noSessionError = 'Could not call ' + method + '. No OpenTok session is available';
-      if (!this.session) {
-        logging.message('Could not call ' + method + '. No OpenTok session is available');
-      }
-      if (asyncMethods.includes(method)) {
-        return new Promise(function (resolve, reject) {
-          !_this10.session && reject(noSessionError);
-          _this10.session[method](arg, function (error) {
-            error ? reject(error) : resolve();
-          });
-        });
-      }!this.session && logging.error(noSessionError);
-      return this.session[method](arg);
-    }
   }]);
 
   return OpenTokSDK;
