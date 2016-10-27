@@ -6,44 +6,6 @@ const logging = require('./logging');
 const sessionEvents = require('./events');
 const State = require('./state');
 
-/** Eventing */
-
-const registeredEvents = {};
-
-/**
- * Trigger an event and fire all registered callbacks
- * @param {String} event - The name of the event
- * @param {*} data - Data to be passed to callback functions
- */
-const triggerEvent = (event, data) => {
-  const eventCallbacks = registeredEvents[event];
-  if (!eventCallbacks) {
-    return;
-  }
-  eventCallbacks.forEach(callback => callback(data, event));
-};
-
-/**
- * Wrap OpenTok session events
- */
-const createEventListeners = (session, state) => {
-  /**
-   * Wrap session events and update state when streams are created
-   * or destroyed
-   */
-  sessionEvents.forEach(eventName => {
-    session.on(eventName, event => {
-      if (eventName === 'streamCreated') {
-        state.addStream(event.stream);
-      }
-      if (eventName === 'streamDestroyed') {
-        state.removeStream(event.stream);
-      }
-      triggerEvent(eventName, event);
-    });
-  });
-};
-
 /**
  * Ensures that we have the required credentials
  * @param {Object} credentials
@@ -74,31 +36,86 @@ class OpenTokSDK {
     this.registeredEvents = {};
     this.internalState = new State();
     this.session = OT.initSession(credentials.apiKey, credentials.sessionId);
-    createEventListeners(this.session, this.internalState);
+    this.createEventListeners();
   }
 
   /**
-   * Register a callback for a specific event
-   * @param {String} event - The name of the event
+   * Wrap OpenTok session events
+   */
+  createEventListeners() {
+    /**
+     * Wrap session events and update state when streams are created
+     * or destroyed
+     */
+    sessionEvents.forEach(eventName => {
+      this.session.on(eventName, event => {
+        if (eventName === 'streamCreated') {
+          this.internalState.addStream(event.stream);
+        }
+        if (eventName === 'streamDestroyed') {
+          this.internalState.removeStream(event.stream);
+        }
+        this.triggerEvent(eventName, event);
+      });
+    });
+  }
+
+  /**
+   * Register a callback for a specific event or pass an object
+   * with event => callback key/values to register callbacks for
+   * multiple events.
+   * @param {String | Object} event - The name of the event
    * @param {Function} callback
    */
   on(event, callback) {
-    registeredEvents[event] = registeredEvents[event] || new Set();
-    registeredEvents[event].add(callback);
+    if (typeof event === 'string') {
+      this.registerEvent(event, callback);
+    } else if (typeof event === 'object') {
+      Object.keys(event).forEach(eventName => {
+        this.registerEvent(eventName, event[eventName]);
+      });
+    }
   }
-
   /**
-   * Remove a callback for a specific event
+   * Remove a callback for a specific event. If no parameters are passed,
+   * all callbacks for the session will be removed.
    * @param {String} event - The name of the event
    * @param {Function} callback
    */
   off(event, callback) {
-    const eventCallbacks = registeredEvents[event];
+    if (arguments.length === 0) {
+      this.registeredEvents = {};
+      return;
+    }
+    const eventCallbacks = this.registeredEvents[event];
     if (!eventCallbacks) {
       logging.message(`${ event } is not a registered event.`);
     } else {
       eventCallbacks.delete(callback);
     }
+  }
+
+  /**
+   * Trigger an event and fire all registered callbacks
+   * @param {String} event - The name of the event
+   * @param {*} data - Data to be passed to callback functions
+   */
+  triggerEvent(event, data) {
+    const eventCallbacks = this.registeredEvents[event];
+    if (!eventCallbacks) {
+      return;
+    }
+    eventCallbacks.forEach(callback => callback(data, event));
+  }
+
+  /**
+   * Register a callback for an event
+   * @param {String} event - The event name
+   * @param {Function} callback
+   */
+  registerEvent(event, callback) {
+    this.registeredEvents[event] = this.registeredEvents[event] || new Set();
+    this.registeredEvents[event].add(callback);
   }
 
   /**

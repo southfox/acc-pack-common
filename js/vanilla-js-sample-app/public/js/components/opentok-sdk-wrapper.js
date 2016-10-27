@@ -26,6 +26,8 @@ module.exports = {
 (function (global){
 'use strict';
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -37,46 +39,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var logging = require('./logging');
 var sessionEvents = require('./events');
 var State = require('./state');
-
-/** Eventing */
-
-var registeredEvents = {};
-
-/**
- * Trigger an event and fire all registered callbacks
- * @param {String} event - The name of the event
- * @param {*} data - Data to be passed to callback functions
- */
-var triggerEvent = function triggerEvent(event, data) {
-  var eventCallbacks = registeredEvents[event];
-  if (!eventCallbacks) {
-    return;
-  }
-  eventCallbacks.forEach(function (callback) {
-    return callback(data, event);
-  });
-};
-
-/**
- * Wrap OpenTok session events
- */
-var createEventListeners = function createEventListeners(session, state) {
-  /**
-   * Wrap session events and update state when streams are created
-   * or destroyed
-   */
-  sessionEvents.forEach(function (eventName) {
-    session.on(eventName, function (event) {
-      if (eventName === 'streamCreated') {
-        state.addStream(event.stream);
-      }
-      if (eventName === 'streamDestroyed') {
-        state.removeStream(event.stream);
-      }
-      triggerEvent(eventName, event);
-    });
-  });
-};
 
 /**
  * Ensures that we have the required credentials
@@ -112,25 +74,60 @@ var OpenTokSDK = function () {
     this.registeredEvents = {};
     this.internalState = new State();
     this.session = OT.initSession(credentials.apiKey, credentials.sessionId);
-    createEventListeners(this.session, this.internalState);
+    this.createEventListeners();
   }
 
   /**
-   * Register a callback for a specific event
-   * @param {String} event - The name of the event
-   * @param {Function} callback
+   * Wrap OpenTok session events
    */
 
 
   _createClass(OpenTokSDK, [{
-    key: 'on',
-    value: function on(event, callback) {
-      registeredEvents[event] = registeredEvents[event] || new Set();
-      registeredEvents[event].add(callback);
+    key: 'createEventListeners',
+    value: function createEventListeners() {
+      var _this = this;
+
+      /**
+       * Wrap session events and update state when streams are created
+       * or destroyed
+       */
+      sessionEvents.forEach(function (eventName) {
+        _this.session.on(eventName, function (event) {
+          if (eventName === 'streamCreated') {
+            _this.internalState.addStream(event.stream);
+          }
+          if (eventName === 'streamDestroyed') {
+            _this.internalState.removeStream(event.stream);
+          }
+          _this.triggerEvent(eventName, event);
+        });
+      });
     }
 
     /**
-     * Remove a callback for a specific event
+     * Register a callback for a specific event or pass an object
+     * with event => callback key/values to register callbacks for
+     * multiple events.
+     * @param {String | Object} event - The name of the event
+     * @param {Function} callback
+     */
+
+  }, {
+    key: 'on',
+    value: function on(event, callback) {
+      var _this2 = this;
+
+      if (typeof event === 'string') {
+        this.registerEvent(event, callback);
+      } else if ((typeof event === 'undefined' ? 'undefined' : _typeof(event)) === 'object') {
+        Object.keys(event).forEach(function (eventName) {
+          _this2.registerEvent(eventName, event[eventName]);
+        });
+      }
+    }
+    /**
+     * Remove a callback for a specific event. If no parameters are passed,
+     * all callbacks for the session will be removed.
      * @param {String} event - The name of the event
      * @param {Function} callback
      */
@@ -138,12 +135,47 @@ var OpenTokSDK = function () {
   }, {
     key: 'off',
     value: function off(event, callback) {
-      var eventCallbacks = registeredEvents[event];
+      if (arguments.length === 0) {
+        this.registeredEvents = {};
+        return;
+      }
+      var eventCallbacks = this.registeredEvents[event];
       if (!eventCallbacks) {
         logging.message(event + ' is not a registered event.');
       } else {
         eventCallbacks.delete(callback);
       }
+    }
+
+    /**
+     * Trigger an event and fire all registered callbacks
+     * @param {String} event - The name of the event
+     * @param {*} data - Data to be passed to callback functions
+     */
+
+  }, {
+    key: 'triggerEvent',
+    value: function triggerEvent(event, data) {
+      var eventCallbacks = this.registeredEvents[event];
+      if (!eventCallbacks) {
+        return;
+      }
+      eventCallbacks.forEach(function (callback) {
+        return callback(data, event);
+      });
+    }
+
+    /**
+     * Register a callback for an event
+     * @param {String} event - The event name
+     * @param {Function} callback
+     */
+
+  }, {
+    key: 'registerEvent',
+    value: function registerEvent(event, callback) {
+      this.registeredEvents[event] = this.registeredEvents[event] || new Set();
+      this.registeredEvents[event].add(callback);
     }
 
     /**
@@ -155,13 +187,13 @@ var OpenTokSDK = function () {
   }, {
     key: 'publish',
     value: function publish(publisher) {
-      var _this = this;
+      var _this3 = this;
 
       return new Promise(function (resolve, reject) {
-        _this.session.publish(publisher, function (error) {
+        _this3.session.publish(publisher, function (error) {
           error && reject(error);
           var type = publisher.stream.videoType;
-          _this.internalState.addPublisher(type, publisher);
+          _this3.internalState.addPublisher(type, publisher);
           resolve();
         });
       });
@@ -190,14 +222,14 @@ var OpenTokSDK = function () {
   }, {
     key: 'subscribe',
     value: function subscribe(stream, container, options) {
-      var _this2 = this;
+      var _this4 = this;
 
       return new Promise(function (resolve, reject) {
-        var subscriber = _this2.session.subscribe(stream, container, options, function (error) {
+        var subscriber = _this4.session.subscribe(stream, container, options, function (error) {
           if (error) {
             reject(error);
           } else {
-            _this2.internalState.addSubscriber(subscriber);
+            _this4.internalState.addSubscriber(subscriber);
             resolve();
           }
         });
@@ -213,11 +245,11 @@ var OpenTokSDK = function () {
   }, {
     key: 'unsubscribe',
     value: function unsubscribe(subscriber) {
-      var _this3 = this;
+      var _this5 = this;
 
       return new Promise(function (resolve) {
-        _this3.session.unsubscribe(subscriber);
-        _this3.internalState.removeSubscriber(subscriber);
+        _this5.session.unsubscribe(subscriber);
+        _this5.internalState.removeSubscriber(subscriber);
         resolve();
       });
     }
@@ -230,12 +262,12 @@ var OpenTokSDK = function () {
   }, {
     key: 'connect',
     value: function connect() {
-      var _this4 = this;
+      var _this6 = this;
 
       return new Promise(function (resolve, reject) {
-        var token = _this4.credentials.token;
+        var token = _this6.credentials.token;
 
-        _this4.session.connect(token, function (error) {
+        _this6.session.connect(token, function (error) {
           error ? reject(error) : resolve();
         });
       });
