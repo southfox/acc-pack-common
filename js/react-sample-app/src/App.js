@@ -84,16 +84,6 @@ class App extends Component {
   componentDidMount() {
     const session = otSDK.session;
     otSDK.connect().then(() => this.setState({ session, connected: true }));
-    const events = [
-      'streamCreated',
-      'streamDestroyed',
-      'subscribeToCamera',
-      'unsubscribeFromCamera',
-      'subscribeToScreen',
-      'unsubscribeFromScreen',
-      'startScreenShare',
-      'endScreenShare',
-    ];
   }
 
   startCall() {
@@ -120,10 +110,10 @@ class App extends Component {
 
     // Publish local camera stream
     otSDK.initPublisher('cameraPublisherContainer', callProperties)
-      .then(publisher => {
-        otSDK.publish(publisher);
-        this.setState(Object.assign({}, otSDK.state(), { localPublisherId: publisher.id }));
-      }).catch(error => console.log(error));
+    .then(publisher => {
+      otSDK.publish(publisher);
+      this.setState(Object.assign({}, otSDK.state(), { localPublisherId: publisher.id }));
+    }).catch(error => console.log(error));
 
     this.setState({ active: true });
   }
