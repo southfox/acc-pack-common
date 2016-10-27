@@ -182,6 +182,36 @@ class OpenTokSDK {
     });
   }
 
+  forceDisconnect(connection) {
+    return new Promise((resolve, reject) => {
+      this.session.forceDisconnect(connection, (error) => {
+        error ? reject(error) : resolve();
+      });
+    });
+  }
+
+  forceUnpublish(stream) {
+    return new Promise((resolve, reject) => {
+      this.session.forceUnpublish(stream, (error) => {
+        error ? reject(error) : resolve();
+      });
+    });
+  }
+
+
+  signal(signal) {
+    return new Promise((resolve, reject) => {
+      this.session.signal(signal, (error) => {
+        error ? reject(error) : resolve();
+      });
+    });
+  }
+
+  disconnect() {
+    this.session.disconnect();
+    this.internalState.reset();
+  }
+
   /**
    * Return the state of the OpenTok session
    * @returns {Object} Streams, publishers, subscribers, and stream map
@@ -209,14 +239,46 @@ class OpenTokSDK {
    * session is available before invoking the method.
    * @param {String} method - The OpenTok session method
    * @params {Array} [args]
+   * @returns {Promise}
    */
-  sessionMethods(method, ...args) {
+  sessionMethods(method, arg) {
+    const asyncMethods = ['forceDisconnect', 'forceUnpublish', 'signal'];
+    const noSessionError = `Could not call ${method}. No OpenTok session is available`;
     if (!this.session) {
       logging.message(`Could not call ${method}. No OpenTok session is available`);
     }
-    return this.session[method](...args);
+    if (asyncMethods.includes(method)) {
+      return new Promise((resolve, reject) => {
+        !this.session && reject(noSessionError);
+        this.session[method](arg, (error) => {
+          error ? reject(error) : resolve();
+        });
+      });
+    }
+    !this.session && logging.error(noSessionError);
+    return this.session[method](arg);
   }
 }
+
+// const opentokSDK = {
+//   connect,
+//   disconnect: (...args) => sessionMethods('forceDisconnect', ...args),
+//   forceDisconnect: (...args) => sessionMethods('forceDisconnect', ...args),
+//   forceUnpublish: (...args) => sessionMethods('forceUnpublish', ...args),
+//   getCredentials,
+//   getPublisherForStream: (...args) => sessionMethods('getPublisherForStream', ...args),
+//   getSubscribersForStream: (...args) => sessionMethods('getSubscribersForStream', ...args),
+//   init,
+//   initPublisher,
+//   off,
+//   on,
+//   publish,
+//   signal: (...args) => sessionMethods('signal', args),
+//   state,
+//   subscribe,
+//   unpublish,
+//   unsubscribe,
+// };
 
 
 if (global === window) {

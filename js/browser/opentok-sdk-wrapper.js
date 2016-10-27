@@ -268,6 +268,45 @@ var OpenTokSDK = function () {
         });
       });
     }
+  }, {
+    key: 'forceDisconnect',
+    value: function forceDisconnect(connection) {
+      var _this6 = this;
+
+      return new Promise(function (resolve, reject) {
+        _this6.session.forceDisconnect(connection, function (error) {
+          error ? reject(error) : resolve();
+        });
+      });
+    }
+  }, {
+    key: 'forceUnpublish',
+    value: function forceUnpublish(stream) {
+      var _this7 = this;
+
+      return new Promise(function (resolve, reject) {
+        _this7.session.forceUnpublish(stream, function (error) {
+          error ? reject(error) : resolve();
+        });
+      });
+    }
+  }, {
+    key: 'signal',
+    value: function signal(_signal) {
+      var _this8 = this;
+
+      return new Promise(function (resolve, reject) {
+        _this8.session.signal(_signal, function (error) {
+          error ? reject(error) : resolve();
+        });
+      });
+    }
+  }, {
+    key: 'disconnect',
+    value: function disconnect() {
+      this.session.disconnect();
+      this.internalState.reset();
+    }
 
     /**
      * Return the state of the OpenTok session
@@ -302,27 +341,55 @@ var OpenTokSDK = function () {
      * session is available before invoking the method.
      * @param {String} method - The OpenTok session method
      * @params {Array} [args]
+     * @returns {Promise}
      */
 
   }, {
     key: 'sessionMethods',
-    value: function sessionMethods(method) {
-      var _session;
+    value: function sessionMethods(method, arg) {
+      var _this9 = this;
 
+      var asyncMethods = ['forceDisconnect', 'forceUnpublish', 'signal'];
+      var noSessionError = 'Could not call ' + method + '. No OpenTok session is available';
       if (!this.session) {
         logging.message('Could not call ' + method + '. No OpenTok session is available');
       }
-
-      for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-        args[_key - 1] = arguments[_key];
+      if (asyncMethods.includes(method)) {
+        return new Promise(function (resolve, reject) {
+          !_this9.session && reject(noSessionError);
+          _this9.session[method](arg, function (error) {
+            error ? reject(error) : resolve();
+          });
+        });
       }
-
-      return (_session = this.session)[method].apply(_session, args);
+      !this.session && logging.error(noSessionError);
+      return this.session[method](arg);
     }
   }]);
 
   return OpenTokSDK;
 }();
+
+// const opentokSDK = {
+//   connect,
+//   disconnect: (...args) => sessionMethods('forceDisconnect', ...args),
+//   forceDisconnect: (...args) => sessionMethods('forceDisconnect', ...args),
+//   forceUnpublish: (...args) => sessionMethods('forceUnpublish', ...args),
+//   getCredentials,
+//   getPublisherForStream: (...args) => sessionMethods('getPublisherForStream', ...args),
+//   getSubscribersForStream: (...args) => sessionMethods('getSubscribersForStream', ...args),
+//   init,
+//   initPublisher,
+//   off,
+//   on,
+//   publish,
+//   signal: (...args) => sessionMethods('signal', args),
+//   state,
+//   subscribe,
+//   unpublish,
+//   unsubscribe,
+// };
+
 
 if (global === window) {
   window.OpenTokSDK = OpenTokSDK;
@@ -342,19 +409,16 @@ var State = function () {
   function State() {
     _classCallCheck(this, State);
 
-    // Map publisher ids to publisher objects
     this.publishers = {
       camera: {},
       screen: {}
     };
 
-    // Map subscriber id to subscriber objects
     this.subscribers = {
       camera: {},
       screen: {}
     };
 
-    // Map stream ids to stream objects
     this.streams = {};
 
     // Map stream ids to subscriber/publisher ids
@@ -503,6 +567,17 @@ var State = function () {
     key: "getStreams",
     value: function getStreams() {
       return this.streams;
+    }
+
+    /** Reset streams, publishers, and subscribers */
+
+  }, {
+    key: "reset",
+    value: function reset() {
+      this.streams = {};
+      this.streamMap = {};
+      this.publishers = { camera: {}, screen: {} };
+      this.subscribers = { camera: {}, screen: {} };
     }
   }, {
     key: "all",

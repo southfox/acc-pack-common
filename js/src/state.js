@@ -1,18 +1,15 @@
 class State {
   constructor() {
-    // Map publisher ids to publisher objects
     this.publishers = {
       camera: {},
       screen: {},
     };
 
-    // Map subscriber id to subscriber objects
     this.subscribers = {
       camera: {},
       screen: {},
     };
 
-    // Map stream ids to stream objects
     this.streams = {};
 
     // Map stream ids to subscriber/publisher ids
@@ -128,6 +125,14 @@ class State {
 
   getStreams() {
     return this.streams;
+  }
+
+  /** Reset streams, publishers, and subscribers */
+  reset() {
+    this.streams = {};
+    this.streamMap = {};
+    this.publishers = { camera: {}, screen: {} };
+    this.subscribers = { camera: {}, screen: {} };
   }
 
   all() {
