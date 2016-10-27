@@ -34,7 +34,7 @@ class OpenTokSDK {
   constructor(credentials) {
     validateCredentials(credentials);
     this.credentials = credentials;
-    this.registeredEvents = {};
+    this.eventListeners = {};
     this.internalState = new State();
     this.session = OT.initSession(credentials.apiKey, credentials.sessionId);
     this.createEventListeners();
@@ -66,10 +66,10 @@ class OpenTokSDK {
    */
   on(event, callback) {
     if (typeof event === 'string') {
-      this.registerEvent(event, callback);
+      this.registerListener(event, callback);
     } else if (typeof event === 'object') {
       Object.keys(event).forEach((eventName) => {
-        this.registerEvent(eventName, event[eventName]);
+        this.registerListener(eventName, event[eventName]);
       });
     }
   }
@@ -81,10 +81,10 @@ class OpenTokSDK {
      */
   off(event, callback) {
     if (arguments.length === 0) {
-      this.registeredEvents = {};
+      this.eventListeners = {};
       return;
     }
-    const eventCallbacks = this.registeredEvents[event];
+    const eventCallbacks = this.eventListeners[event];
     if (!eventCallbacks) {
       logging.message(`${event} is not a registered event.`);
     } else {
@@ -98,7 +98,7 @@ class OpenTokSDK {
    * @param {*} data - Data to be passed to callback functions
    */
   triggerEvent(event, data) {
-    const eventCallbacks = this.registeredEvents[event];
+    const eventCallbacks = this.eventListeners[event];
     if (!eventCallbacks) { return; }
     eventCallbacks.forEach(callback => callback(data, event));
   }
@@ -109,9 +109,9 @@ class OpenTokSDK {
    * @param {String} event - The event name
    * @param {Function} callback
    */
-  registerEvent(event, callback) {
-    this.registeredEvents[event] = this.registeredEvents[event] || new Set();
-    this.registeredEvents[event].add(callback);
+  registerListener(event, callback) {
+    this.eventListeners[event] = this.eventListeners[event] || new Set();
+    this.eventListeners[event].add(callback);
   }
 
   /**
