@@ -1,11 +1,11 @@
 package com.tokbox.android.otsdkwrapper.wrapper;
 
 import android.content.Context;
-import android.provider.MediaStore;
+
 import android.util.Log;
 import android.view.View;
 
-import com.opentok.android.BaseVideoCapturer;
+
 import com.opentok.android.BaseVideoRenderer;
 import com.opentok.android.Connection;
 import com.opentok.android.OpentokError;
@@ -68,6 +68,8 @@ public class OTWrapper {
     private boolean isPreviewing = false;
     private boolean isPublishing = false;
     private boolean startPublishing = false;
+    private boolean startSharingScreen = false;
+    private boolean isSharingScreen = false;
 
     private OTConfig mOTConfig;
     private PreviewConfig mPreviewConfig;
@@ -151,12 +153,6 @@ public class OTWrapper {
     }
 
     /**
-     * Whether the local connection is oldest (<code>true</code>) or not (
-     * <code>false</code>).
-     *
-     */
-
-    /**
      * Check if the own connection is the oldest in the current session
      * @return Whether the local connection is oldest (<code>true</code>) or not (
      * <code>false</code>).
@@ -237,14 +233,31 @@ public class OTWrapper {
         }
     }
 
-
+    /**
+     * Start the local sharing screen
+     * @param config
+     */
     public void startScreensharing(PreviewConfig config){
-        mPreviewConfig = config;
-        startPublishing = true;
+        startSharingScreen = true;
         if (mScreenPublisher == null) {
-            createPublisher();
+            createScreenPublisher(config);
         }
         publishIfReady();
+    }
+
+    /**
+     * Stop the local sharing screen.
+     */
+    public void stopSharingScreen() {
+        if (mSession != null && mScreenPublisher != null && startSharingScreen) {
+            mSession.unpublish(mScreenPublisher);
+        }
+        isSharingScreen = false;
+        startSharingScreen = false;
+
+        dettachPublisherView();
+        mScreenPublisher = null;
+
     }
 
     /**
@@ -528,6 +541,7 @@ public class OTWrapper {
         mSessionConnection = null;
         isPreviewing = false;
         isPublishing = false;
+        isSharingScreen = false;
         cleanUpSignals();
     }
 
@@ -538,7 +552,7 @@ public class OTWrapper {
     }
 
     private synchronized void publishIfReady() {
-        Log.d(LOG_TAG, "publishIfReady: " + mSessionConnection + ", " + mPublisher + ", " +
+        Log.d(LOG_TAG, "publishIfReady: " + mSessionConnection + ", " + mScreenPublisher + ", " +
                 startPublishing);
         if (mSessionConnection != null && mPublisher != null && startPublishing) {
 
@@ -549,6 +563,22 @@ public class OTWrapper {
                 mSession.publish(mPublisher);
                 // Do this as soon as possible to avoid race conditions...
                 isPublishing = true;
+            }
+        }
+    }
+
+    private synchronized  void publishScreenIfReady(){
+        Log.d(LOG_TAG, "publishIfReady: " + mSessionConnection + ", " + mScreenPublisher + ", " +
+                startSharingScreen);
+        if (mSessionConnection != null && mScreenPublisher != null && startSharingScreen) {
+
+            if (!isPreviewing) {
+                attachPublisherView();
+            }
+            if (!isSharingScreen) {
+                mSession.publish(mScreenPublisher);
+                // Do this as soon as possible to avoid race conditions...
+                isSharingScreen = true;
             }
         }
     }
@@ -586,6 +616,43 @@ public class OTWrapper {
         mPublisher.setCameraListener(mCameraListener);
         //byDefault
         mPublisher.setStyle(BaseVideoRenderer.STYLE_VIDEO_SCALE, BaseVideoRenderer.STYLE_VIDEO_FILL);
+    }
+
+    private void createScreenPublisher(PreviewConfig config){
+        //TODO: add more cases
+        Log.d(LOG_TAG, "createScreenPublisher: " + config);
+        if (config != null) {
+            if (config.getResolution() != Publisher.CameraCaptureResolution.MEDIUM ||
+                    config.getFrameRate() != Publisher.CameraCaptureFrameRate.FPS_15) {
+                Log.d(LOG_TAG, "createPublisher: Creating publisher with: " + config.getResolution() +
+                        ", " + config.getFrameRate());
+                mScreenPublisher = new Publisher(mContext, config.getName(), config.getResolution(),
+                        config.getFrameRate() );
+            } else {
+                Log.d(LOG_TAG, "createPublisher: Creating Publisher with audio and video specified");
+                mPublisher = new Publisher(mContext, config.getName(), config.isAudioTrack(),
+                        config.isVideoTrack());
+            }
+
+            if ( config.getCapturer() != null ){
+                //custom video capturer
+                mScreenPublisher.setCapturer(config.getCapturer());
+            }
+            if ( config.getRenderer() != null ){
+                mScreenPublisher.setRenderer(config.getRenderer());
+            }
+
+        } else {
+            Log.d(LOG_TAG, "createPublisher: Creating DefaultPublisher");
+            mScreenPublisher = new Publisher(mContext);
+        }
+
+        mScreenPublisher.setPublisherListener(mPublisherListener);
+        mScreenPublisher.setCameraListener(mCameraListener);
+        mScreenPublisher.setPublisherVideoType(PublisherKit.PublisherKitVideoType.PublisherKitVideoTypeScreen);
+
+        //byDefault
+        mScreenPublisher.setStyle(BaseVideoRenderer.STYLE_VIDEO_SCALE, BaseVideoRenderer.STYLE_VIDEO_FILL);
     }
 
     private void attachPublisherView() {
@@ -784,8 +851,8 @@ public class OTWrapper {
     };
 
     private SubscriberKit.SubscriberListener mSubscriberListener =
-            new SubscriberKit.SubscriberListener() {
 
+            new SubscriberKit.SubscriberListener() {
                 @Override
                 public void onConnected(SubscriberKit sub) {
                     if (mBasicListener != null) {
