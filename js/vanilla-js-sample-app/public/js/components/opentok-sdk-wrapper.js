@@ -26,8 +26,6 @@ module.exports = {
 (function (global){
 'use strict';
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -80,8 +78,9 @@ var OpenTokSDK = function () {
    * @param {String} credentials.apiKey
    * @param {String} credentials.sessionId
    * @param {String} credentials.token
+   * @param {Object} [eventListeners]
    */
-  function OpenTokSDK(credentials) {
+  function OpenTokSDK(credentials, eventListeners) {
     _classCallCheck(this, OpenTokSDK);
 
     validateCredentials(credentials);
@@ -89,7 +88,8 @@ var OpenTokSDK = function () {
     this.eventListeners = {};
     this.internalState = new State();
     this.session = OT.initSession(credentials.apiKey, credentials.sessionId);
-    this.createEventListeners();
+    this.setInternalListeners();
+    eventListeners && this.on(eventListeners);
   }
 
   /**
@@ -98,24 +98,21 @@ var OpenTokSDK = function () {
 
 
   _createClass(OpenTokSDK, [{
-    key: 'createEventListeners',
-    value: function createEventListeners() {
+    key: 'setInternalListeners',
+    value: function setInternalListeners() {
       var _this = this;
 
       /**
        * Wrap session events and update state when streams are created
        * or destroyed
        */
-      sessionEvents.forEach(function (eventName) {
-        _this.session.on(eventName, function (event) {
-          if (eventName === 'streamCreated') {
-            _this.internalState.addStream(event.stream);
-          }
-          if (eventName === 'streamDestroyed') {
-            _this.internalState.removeStream(event.stream);
-          }
-          _this.triggerEvent(eventName, event);
-        });
+      this.session.on('streamCreated', function (_ref) {
+        var stream = _ref.stream;
+        return _this.internalState.addStream(stream);
+      });
+      this.session.on('streamDestroyed', function (_ref2) {
+        var stream = _ref2.stream;
+        return _this.internalState.removeStream(stream);
       });
     }
 
@@ -123,39 +120,34 @@ var OpenTokSDK = function () {
      * Register a callback for a specific event or pass an object
      * with event => callback key/values to register callbacks for
      * multiple events.
-     * @param {String | Object} event - The name of the event
-     * @param {Function} callback
+     * @param {String | Object} [events] - The name of the events
+     * @param {Function} [callback]
+     * @param {Function} [context]
+     * https://tokbox.com/developer/sdks/js/reference/Session.html#on
      */
 
   }, {
     key: 'on',
-    value: function on(event, callback) {
-      if (typeof event === 'string') {
-        this.session.on(event, callback);
-      } else if ((typeof event === 'undefined' ? 'undefined' : _typeof(event)) === 'object') {
-        this.session.on(event);
-      }
+    value: function on() {
+      var _session;
+
+      (_session = this.session).on.apply(_session, arguments);
     }
+
     /**
      * Remove a callback for a specific event. If no parameters are passed,
      * all callbacks for the session will be removed.
-     * @param {String} event - The name of the event
-     * @param {Function} callback
+     * @param {String} [events] - The name of the events
+     * @param {Function} [callback]
+     * https://tokbox.com/developer/sdks/js/reference/Session.html#off
      */
 
   }, {
     key: 'off',
-    value: function off(event, callback) {
-      if (arguments.length === 0) {
-        this.eventListeners = {};
-        return;
-      }
-      var eventCallbacks = this.eventListeners[event];
-      if (!eventCallbacks) {
-        logging.message(event + ' is not a registered event.');
-      } else {
-        eventCallbacks.delete(callback);
-      }
+    value: function off() {
+      var _session2;
+
+      (_session2 = this.session).off.apply(_session2, arguments);
     }
 
     /**

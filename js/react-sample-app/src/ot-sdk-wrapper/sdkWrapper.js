@@ -42,68 +42,52 @@ class OpenTokSDK {
    * @param {String} credentials.apiKey
    * @param {String} credentials.sessionId
    * @param {String} credentials.token
+   * @param {Object} [eventListeners]
    */
-  constructor(credentials) {
+  constructor(credentials, eventListeners) {
     validateCredentials(credentials);
     this.credentials = credentials;
     this.eventListeners = {};
     this.internalState = new State();
     this.session = OT.initSession(credentials.apiKey, credentials.sessionId);
-    this.createEventListeners();
+    this.setInternalListeners();
+    eventListeners && this.on(eventListeners);
   }
 
   /**
    * Wrap OpenTok session events
    */
-  createEventListeners() {
+  setInternalListeners() {
     /**
      * Wrap session events and update state when streams are created
      * or destroyed
      */
-    sessionEvents.forEach(eventName => {
-      this.session.on(eventName, event => {
-        if (eventName === 'streamCreated') {
-          this.internalState.addStream(event.stream);
-        }
-        if (eventName === 'streamDestroyed') {
-          this.internalState.removeStream(event.stream);
-        }
-        this.triggerEvent(eventName, event);
-      });
-    });
+    this.session.on('streamCreated', ({ stream }) => this.internalState.addStream(stream));
+    this.session.on('streamDestroyed', ({ stream }) => this.internalState.removeStream(stream));
   }
 
   /**
    * Register a callback for a specific event or pass an object
    * with event => callback key/values to register callbacks for
    * multiple events.
-   * @param {String | Object} event - The name of the event
-   * @param {Function} callback
+   * @param {String | Object} [events] - The name of the events
+   * @param {Function} [callback]
+   * @param {Function} [context]
+   * https://tokbox.com/developer/sdks/js/reference/Session.html#on
    */
-  on(event, callback) {
-    if (typeof event === 'string') {
-      this.session.on(event, callback);
-    } else if (typeof event === 'object') {
-      this.session.on(event);
-    }
+  on(...args) {
+    this.session.on(...args);
   }
+
   /**
    * Remove a callback for a specific event. If no parameters are passed,
    * all callbacks for the session will be removed.
-   * @param {String} event - The name of the event
-   * @param {Function} callback
+   * @param {String} [events] - The name of the events
+   * @param {Function} [callback]
+   * https://tokbox.com/developer/sdks/js/reference/Session.html#off
    */
-  off(event, callback) {
-    if (arguments.length === 0) {
-      this.eventListeners = {};
-      return;
-    }
-    const eventCallbacks = this.eventListeners[event];
-    if (!eventCallbacks) {
-      logging.message(`${ event } is not a registered event.`);
-    } else {
-      eventCallbacks.delete(callback);
-    }
+  off(...args) {
+    this.session.off(...args);
   }
 
   /**
