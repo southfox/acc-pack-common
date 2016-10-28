@@ -3,6 +3,8 @@ package com.tokbox.android.otsdkwrapper.utils;
 
 import android.view.View;
 
+import com.opentok.android.Stream;
+
 public class StreamStatus {
 
     private final View mView;
@@ -14,13 +16,39 @@ public class StreamStatus {
     private boolean mContainerAudioStatus;
     private boolean mContainerVideoStatus;
 
+    private StreamType mType;
+
+    public enum StreamType {
+        CAMERA(0),
+        SCREEN(1);
+
+        private final int value;
+
+        StreamType(int v) {
+            value = v;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+    }
+
     public StreamStatus(View streamView, boolean containerAudio, boolean containerVideo,
-                        boolean hasAudio, boolean hasVideo) {
+                        boolean hasAudio, boolean hasVideo, Stream.StreamVideoType type) {
         mView = streamView;
         mHasAudio = hasAudio;
         mHasVideo = hasVideo;
         mContainerAudioStatus = containerAudio;
         mContainerVideoStatus = containerVideo;
+        if ( type == Stream.StreamVideoType.StreamVideoTypeCamera) {
+            mType = StreamType.CAMERA;
+        }
+        else {
+            if ( type == Stream.StreamVideoType.StreamVideoTypeScreen) {
+                mType = StreamType.SCREEN;
+            }
+        }
     }
 
     public boolean has(MediaType type) {
@@ -48,6 +76,10 @@ public class StreamStatus {
 
     public View getView() {
         return mView;
+    }
+
+    public StreamType getType() {
+        return mType;
     }
 
     @Override

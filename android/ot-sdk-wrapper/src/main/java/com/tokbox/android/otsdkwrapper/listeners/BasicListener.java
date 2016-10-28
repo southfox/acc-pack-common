@@ -21,9 +21,9 @@ public interface BasicListener<Wrapper> {
 
     void onRemoteViewDestroyed(Wrapper wrapper, View remoteView, String remoteId) throws ListenerException;
 
-    void onStartedSharingMedia(Wrapper wrapper) throws ListenerException;
+    void onStartedSharingMedia(Wrapper wrapper, boolean screensharing) throws ListenerException;
 
-    void onStoppedSharingMedia(Wrapper wrapper) throws ListenerException;
+    void onStoppedSharingMedia(Wrapper wrapper, boolean screensharing) throws ListenerException;
 
     void onRemoteJoined(Wrapper wrapper, String remoteId) throws ListenerException;
 

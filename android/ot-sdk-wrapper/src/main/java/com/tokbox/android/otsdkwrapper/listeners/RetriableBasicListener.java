@@ -23,10 +23,10 @@ public interface RetriableBasicListener<Wrapper> extends BasicListener<Wrapper> 
     void onPreviewViewDestroyed(Wrapper wrapper, View localView);
 
     @Override
-    void onStartedSharingMedia(Wrapper wrapper);
+    void onStartedSharingMedia(Wrapper wrapper, boolean screensharing);
 
     @Override
-    void onStoppedSharingMedia(Wrapper wrapper);
+    void onStoppedSharingMedia(Wrapper wrapper, boolean screensharing);
 
     @Override
     void onRemoteViewReady(Wrapper wrapper, View remoteView, String remoteId, String data);

@@ -55,8 +55,8 @@ public class OTWrapper {
 
     //listeners
     private Hashtable<String, ArrayList<SignalListener>> mSignalListeners = null;
-    private RetriableBasicListener<OTWrapper> mBasicListener;
-    private RetriableAdvancedListener<OTWrapper> mAdvancedListener;
+    private ArrayList<RetriableBasicListener<OTWrapper>> mBasicListeners;
+    private ArrayList<RetriableAdvancedListener<OTWrapper>> mAdvancedListeners;
 
     //signal protocol
     private SignalProtocol mInputSignalProtocol;
@@ -88,6 +88,8 @@ public class OTWrapper {
         mSubscribers = new HashMap<String, Subscriber>();
         mConnections = new Hashtable<String, Connection>();
         mSignalListeners = new Hashtable<String, ArrayList<SignalListener>>();
+        mBasicListeners = new ArrayList<RetriableBasicListener<OTWrapper>>();
+        mAdvancedListeners = new ArrayList<RetriableAdvancedListener<OTWrapper>>();
     }
 
     /**
@@ -107,8 +109,12 @@ public class OTWrapper {
         if (mSession != null) {
             mSession.onResume();
         }
-        if (resumeEvents && mBasicListener != null) {
-            mBasicListener.resume();
+        if (resumeEvents && mBasicListeners != null && !mBasicListeners.isEmpty()) {
+            for (BasicListener listener: mBasicListeners
+                 ) {
+                ((RetriableBasicListener)listener).resume();
+            }
+
         }
     }
 
@@ -209,56 +215,53 @@ public class OTWrapper {
      * Start the local streaming video
      * @param config The configuration of the preview
      */
-    public void startSharingMedia(PreviewConfig config) {
-        mPreviewConfig = config;
-        startPublishing = true;
-        if (mPublisher == null) {
-            createPublisher();
+    public void startSharingMedia(PreviewConfig config, boolean screensharing) {
+        if (!screensharing) {
+            mPreviewConfig = config;
+            startPublishing = true;
+            if (mPublisher == null) {
+                createPublisher();
+            }
+            publishIfReady();
         }
-        publishIfReady();
+        else {
+            startSharingScreen = true;
+            if (mScreenPublisher == null) {
+                createScreenPublisher(config);
+            }
+            publishIfScreenReady();
+        }
+
     }
 
     /**
      * Stop the local streaming video.
      */
-    public void stopSharingMedia() {
-        if (mSession != null && mPublisher != null && startPublishing) {
-            mSession.unpublish(mPublisher);
-        }
-        isPublishing = false;
-        startPublishing = false;
-        if (!isPreviewing) {
-            dettachPublisherView();
-            mPublisher = null;
+    public void stopSharingMedia(Boolean screensharing) {
+        if (mSession != null ) {
+            if (!screensharing) {
+                if (mPublisher != null && startPublishing) {
+                    mSession.unpublish(mPublisher);
+                }
+                isPublishing = false;
+                startPublishing = false;
+                if (!isPreviewing) {
+                    dettachPublisherView();
+                    mPublisher = null;
+                }
+            } else {
+                if (mScreenPublisher != null && startSharingScreen) {
+                    mSession.unpublish(mScreenPublisher);
+                }
+                isSharingScreen = false;
+                startSharingScreen = false;
+
+                dettachPublisherView(); //toreview
+                mScreenPublisher = null;
+            }
         }
     }
 
-    /**
-     * Start the local sharing screen
-     * @param config
-     */
-    public void startScreensharing(PreviewConfig config){
-        startSharingScreen = true;
-        if (mScreenPublisher == null) {
-            createScreenPublisher(config);
-        }
-        publishIfReady();
-    }
-
-    /**
-     * Stop the local sharing screen.
-     */
-    public void stopSharingScreen() {
-        if (mSession != null && mScreenPublisher != null && startSharingScreen) {
-            mSession.unpublish(mScreenPublisher);
-        }
-        isSharingScreen = false;
-        startSharingScreen = false;
-
-        dettachPublisherView();
-        mScreenPublisher = null;
-
-    }
 
     /**
      * Check Local Media
@@ -348,45 +351,6 @@ public class OTWrapper {
         }
     }
 
-    /**
-     * Sets the Basic UI listener.
-     * @param listener The object that will get notifications when any information changes.
-     */
-    public BasicListener setBasicListener(BasicListener<OTWrapper> listener) {
-        boolean isWrapped = listener instanceof RetriableBasicListener;
-
-        if ((!isWrapped && mBasicListener!= null &&
-                mBasicListener.getInternalListener() == listener) ||
-                (isWrapped && mBasicListener == listener)) {
-            return mBasicListener;
-        }
-        if (listener != null && listener instanceof RetriableBasicListener) {
-            mBasicListener = (RetriableBasicListener) listener;
-        } else {
-            mBasicListener = new UnfailingBasicListener(listener);
-        }
-        refreshPeerList();
-        return mBasicListener;
-    }
-
-    /**
-     * Sets the Advanced UI listener.
-     * @param listener The object that will get notifications when any information changes.
-     */
-    public AdvancedListener setAdvancedListener(AdvancedListener<OTWrapper> listener) {
-        boolean isWrapped = listener instanceof RetriableAdvancedListener;
-
-        if ((!isWrapped && mAdvancedListener!= null && mAdvancedListener.getInternalListener() == listener) ||
-                (isWrapped &&  mAdvancedListener == listener)) {
-            return mAdvancedListener;
-        }
-        if (listener != null && listener instanceof RetriableAdvancedListener) {
-            mAdvancedListener = (RetriableAdvancedListener) listener;
-        } else {
-            mAdvancedListener = new UnfailingAdvancedListener(listener);
-        }
-        return mAdvancedListener;
-    }
 
     /**
      * Sets a input signal processor. The input processor will process all the signals coming from
@@ -457,6 +421,63 @@ public class OTWrapper {
             mSignalListeners.remove(signalName);
         }
     }
+
+    public BasicListener addBasicListener(BasicListener<OTWrapper> listener) {
+        Log.d(LOG_TAG, "Adding BasicListener");
+        boolean isWrapped = listener instanceof RetriableBasicListener;
+        BasicListener basicListener = null;
+        if (!mBasicListeners.contains(listener)) {
+            if (listener != null && listener instanceof RetriableBasicListener) {
+                basicListener = (RetriableBasicListener) listener;
+                mBasicListeners.add((RetriableBasicListener) basicListener);
+            } else {
+                basicListener = new UnfailingBasicListener(listener);
+            }
+            refreshPeerList();
+        }
+        else {
+            //todo return the basiclistener if it is existed
+            /*if ((!isWrapped && mBasicListener!= null &&
+                    mBasicListener.getInternalListener() == listener) ||
+                    (isWrapped && mBasicListener == listener)) {
+                return mBasicListener;
+            }*/
+        }
+        return basicListener;
+    }
+
+    public void removeBasicListener(BasicListener listener) {
+        mBasicListeners.remove(listener);
+    }
+
+    public AdvancedListener addAdvancedListener(AdvancedListener<OTWrapper> listener) {
+        Log.d(LOG_TAG, "Adding BasicListener");
+        boolean isWrapped = listener instanceof RetriableAdvancedListener;
+        AdvancedListener advancedListener = null;
+        if (!mAdvancedListeners.contains(listener)) {
+            if (listener != null && listener instanceof RetriableAdvancedListener) {
+                advancedListener = (RetriableAdvancedListener) listener;
+                mAdvancedListeners.add((RetriableAdvancedListener) advancedListener);
+            } else {
+                advancedListener = new UnfailingAdvancedListener(listener);
+            }
+            refreshPeerList();
+        }
+        else {
+            //todo return the basiclistener if it is existed
+            /*if ((!isWrapped && mBasicListener!= null &&
+                    mBasicListener.getInternalListener() == listener) ||
+                    (isWrapped && mBasicListener == listener)) {
+                return mBasicListener;
+            }*/
+        }
+        return advancedListener;
+    }
+
+    public void removeAdvancedListener(AdvancedListener listener) {
+        mAdvancedListeners.remove(listener);
+    }
+
     /**
      * Remove send a new signal
      * @param signalInfo contents of the signal to be sent
@@ -478,7 +499,7 @@ public class OTWrapper {
         if (mPublisher != null) {
             return new StreamStatus(mPublisher.getView(),
                     mPublisher.getPublishAudio(), mPublisher.getPublishVideo(),
-                    mPublisher.getStream().hasAudio(), mPublisher.getStream().hasVideo());
+                    mPublisher.getStream().hasAudio(), mPublisher.getStream().hasVideo(), mPublisher.getStream().getStreamVideoType());
         }
         return null;
     }
@@ -494,7 +515,7 @@ public class OTWrapper {
         if (sub != null) {
             Stream subSt = sub.getStream();
             return new StreamStatus(sub.getView(), sub.getSubscribeToAudio(), sub.getSubscribeToVideo(),
-                    subSt.hasAudio(), subSt.hasVideo());
+                    subSt.hasAudio(), subSt.hasVideo(), subSt.getStreamVideoType());
         }
         return null;
     }
@@ -567,7 +588,7 @@ public class OTWrapper {
         }
     }
 
-    private synchronized  void publishScreenIfReady(){
+    private synchronized  void publishIfScreenReady(){
         Log.d(LOG_TAG, "publishIfReady: " + mSessionConnection + ", " + mScreenPublisher + ", " +
                 startSharingScreen);
         if (mSessionConnection != null && mScreenPublisher != null && startSharingScreen) {
@@ -630,7 +651,7 @@ public class OTWrapper {
                         config.getFrameRate() );
             } else {
                 Log.d(LOG_TAG, "createPublisher: Creating Publisher with audio and video specified");
-                mPublisher = new Publisher(mContext, config.getName(), config.isAudioTrack(),
+                mScreenPublisher = new Publisher(mContext, config.getName(), config.isAudioTrack(),
                         config.isVideoTrack());
             }
 
@@ -656,27 +677,58 @@ public class OTWrapper {
     }
 
     private void attachPublisherView() {
-        if (mBasicListener != null) {
-            mBasicListener.onPreviewViewReady(SELF, mPublisher.getView());
+        if (mBasicListeners != null && !mBasicListeners.isEmpty()) {
+            for (BasicListener listener: mBasicListeners) {
+                ((RetriableBasicListener)listener).onPreviewViewReady(SELF, mPublisher.getView());
+            }
+        }
+    }
+
+    private void attachPublisherScreenView() {
+        if (mBasicListeners != null && !mBasicListeners.isEmpty()) {
+            for (BasicListener listener: mBasicListeners) {
+                ((RetriableBasicListener)listener).onPreviewViewReady(SELF, mScreenPublisher.getView());
+            }
         }
     }
 
     private void dettachPublisherView() {
-        if (mPublisher != null && mBasicListener != null) {
-            mBasicListener.onPreviewViewDestroyed(SELF, mPublisher.getView());
+        if (mBasicListeners != null && !mBasicListeners.isEmpty()) {
+            for (BasicListener listener: mBasicListeners) {
+                ((RetriableBasicListener)listener).onPreviewViewDestroyed(SELF, mPublisher.getView());
+            }
+        }
+    }
+
+    private void dettachPublisherScreenView() {
+        if (mBasicListeners != null && !mBasicListeners.isEmpty()) {
+            for (BasicListener listener: mBasicListeners) {
+                ((RetriableBasicListener)listener).onPreviewViewDestroyed(SELF, mScreenPublisher.getView());
+            }
         }
     }
 
     private void refreshPeerList() {
-        if (mBasicListener != null && mBasicListener.getInternalListener() != null) {
-            if (mPublisher != null) {
-                mBasicListener.onPreviewViewReady(SELF, mPublisher.getView());
+        if (mBasicListeners != null && !mBasicListeners.isEmpty()) {
+            if (mBasicListeners != null && !mBasicListeners.isEmpty()) {
+                for (BasicListener listener: mBasicListeners) {
+                    if ( ((RetriableBasicListener)listener).getInternalListener() != null ){
+                        if (mPublisher != null) {
+                            ((RetriableBasicListener)listener).onPreviewViewReady(SELF, mPublisher.getView());
+                        }
+                        if (mScreenPublisher != null) {
+                            ((RetriableBasicListener)listener).onPreviewViewReady(SELF, mScreenPublisher.getView());
+                        }
+                        for(Subscriber sub: mSubscribers.values()) {
+                            Stream stream = sub.getStream();
+                            ((RetriableBasicListener)listener).
+                                    onRemoteViewReady(SELF, sub.getView(), stream.getStreamId(), stream.getConnection().getData());
+                        }
+                    }
+                }
             }
-            for(Subscriber sub: mSubscribers.values()) {
-                Stream stream = sub.getStream();
-                mBasicListener.
-                        onRemoteViewReady(SELF, sub.getView(), stream.getStreamId(), stream.getConnection().getData());
-            }
+
+
         }
     }
 
@@ -765,19 +817,25 @@ public class OTWrapper {
 
             publishIfReady();
 
-            if (mBasicListener != null) {
-                mBasicListener.onConnected(SELF, mConnectionsCount,
-                        mSessionConnection.getConnectionId(),
-                        mSessionConnection.getData());
+            if ( mBasicListeners != null ) {
+                for (BasicListener listener : mBasicListeners) {
+                    ((RetriableBasicListener)listener).onConnected(SELF, mConnectionsCount,
+                            mSessionConnection.getConnectionId(),
+                            mSessionConnection.getData());
+                }
             }
         }
 
         @Override
         public void onDisconnected(Session session) {
-            if (mBasicListener != null) {
-                mBasicListener.onDisconnected(SELF, 0, mSessionConnection.getConnectionId(),
-                        mSessionConnection.getData());
+
+            if (mBasicListeners != null ) {
+                for (BasicListener listener : mBasicListeners) {
+                    ((RetriableBasicListener)listener).onDisconnected(SELF, 0, mSessionConnection.getConnectionId(),
+                            mSessionConnection.getData());
+                }
             }
+
             cleanup();
         }
 
@@ -790,9 +848,12 @@ public class OTWrapper {
             String subId = stream.getStreamId();
             mSubscribers.put(subId, sub);
             sub.setSubscriberListener(mSubscriberListener);
-            if (mBasicListener != null) {
-                mBasicListener.onRemoteJoined(SELF, subId);
+            if (mBasicListeners != null) {
+                for (BasicListener listener : mBasicListeners) {
+                    ((RetriableBasicListener)listener).onRemoteJoined(SELF, subId);
+                }
             }
+
             if  (mRemoteRenderer != null ) {
                 sub.setRenderer(mRemoteRenderer);
             }
@@ -805,17 +866,21 @@ public class OTWrapper {
 
             String subId = stream.getStreamId();
             mSubscribers.remove(subId);
-            if (mBasicListener != null) {
-                mBasicListener.onRemoteLeft(SELF, subId);
-                mBasicListener.onRemoteViewDestroyed(SELF, null, subId);
+            if (mBasicListeners != null) {
+                for (BasicListener listener : mBasicListeners) {
+                    ((RetriableBasicListener)listener).onRemoteLeft(SELF, subId);
+                    ((RetriableBasicListener)listener).onRemoteViewDestroyed(SELF, null, subId);
+                }
             }
         }
 
         @Override
         public void onError(Session session, OpentokError opentokError) {
             Log.d(LOG_TAG, "Session: onError " + opentokError.getMessage());
-            if (mBasicListener != null) {
-                mBasicListener.onError(SELF, opentokError);
+            if (mBasicListeners != null) {
+                for (BasicListener listener : mBasicListeners) {
+                    ((RetriableBasicListener)listener).onError(SELF, opentokError);
+                }
             }
         }
     };
@@ -829,9 +894,11 @@ public class OTWrapper {
             if (connection.getCreationTime().compareTo(mSessionConnection.getCreationTime()) <= 0) {
                 mOlderThanMe++;
             }
-            if (mBasicListener != null) {
-                mBasicListener.onConnected(SELF, mConnectionsCount, connection.getConnectionId(),
-                        connection.getData());
+            if (mBasicListeners != null) {
+                for (BasicListener listener : mBasicListeners) {
+                    ((RetriableBasicListener) listener).onConnected(SELF, mConnectionsCount, connection.getConnectionId(),
+                            connection.getData());
+                }
             }
         }
 
@@ -843,9 +910,11 @@ public class OTWrapper {
             if (connection.getCreationTime().compareTo(mSessionConnection.getCreationTime()) <= 0) {
                 mOlderThanMe--;
             }
-            if (mBasicListener != null) {
-                mBasicListener.onDisconnected(SELF, mConnectionsCount, connection.getConnectionId(),
-                        connection.getData());
+            if (mBasicListeners != null) {
+                for (BasicListener listener : mBasicListeners) {
+                    ((RetriableBasicListener) listener).onDisconnected(SELF, mConnectionsCount, connection.getConnectionId(),
+                            connection.getData());
+                }
             }
         }
     };
@@ -855,10 +924,12 @@ public class OTWrapper {
             new SubscriberKit.SubscriberListener() {
                 @Override
                 public void onConnected(SubscriberKit sub) {
-                    if (mBasicListener != null) {
-                        Stream stream = sub.getStream();
-                        mBasicListener.onRemoteViewReady(SELF, sub.getView(), stream.getStreamId(),
-                                stream.getConnection().getData());
+                    if (mBasicListeners != null) {
+                        for (BasicListener listener : mBasicListeners) {
+                            Stream stream = sub.getStream();
+                            ((RetriableBasicListener) listener).onRemoteViewReady(SELF, sub.getView(), stream.getStreamId(),
+                                    stream.getConnection().getData());
+                        }
                     }
                 }
 
@@ -883,8 +954,8 @@ public class OTWrapper {
                             mSubscribers.remove(subscriberKit.getStream().getStreamId());
                             break;
                         default:
-                            if (mBasicListener != null) {
-                                mBasicListener.onError(SELF, opentokError);
+                            for (BasicListener listener : mBasicListeners) {
+                                ((RetriableBasicListener) listener).onError(SELF, opentokError);
                             }
                             break;
                     }
@@ -909,19 +980,25 @@ public class OTWrapper {
 
         @Override
         public void onStreamCreated(PublisherKit publisherKit, Stream stream) {
+            boolean screensharing = false;
             isPublishing = true;
-
-            if (mBasicListener != null) {
-                mBasicListener.onStartedSharingMedia(SELF);
+            if (stream.getStreamVideoType() == Stream.StreamVideoType.StreamVideoTypeScreen){
+                screensharing = true;
+            }
+            for (BasicListener listener : mBasicListeners) {
+                ((RetriableBasicListener) listener).onStartedSharingMedia(SELF, screensharing);
             }
         }
 
         @Override
         public void onStreamDestroyed(PublisherKit publisherKit, Stream stream) {
+            boolean screensharing = false;
             isPublishing = false;
-
-            if (mBasicListener != null) {
-                mBasicListener.onStoppedSharingMedia(SELF);
+            if (stream.getStreamVideoType() == Stream.StreamVideoType.StreamVideoTypeScreen){
+                screensharing = true;
+            }
+            for (BasicListener listener : mBasicListeners) {
+                ((RetriableBasicListener) listener).onStoppedSharingMedia(SELF, screensharing);
             }
         }
 
@@ -938,8 +1015,8 @@ public class OTWrapper {
                 case PublisherWebRTCError:
                     Log.e(LOG_TAG, "Publisher: onError: Got a InternalWebRTCError!");
                 default:
-                    if (mBasicListener != null) {
-                        mBasicListener.onError(SELF, opentokError);
+                    for (BasicListener listener : mBasicListeners) {
+                        ((RetriableBasicListener) listener).onError(SELF, opentokError);
                     }
                     break;
             }
@@ -952,15 +1029,19 @@ public class OTWrapper {
 
         @Override
         public void onReconnecting(Session session) {
-            if (mAdvancedListener != null) {
-                mAdvancedListener.onReconnecting(SELF);
+            if ( mAdvancedListeners != null ) {
+                for (AdvancedListener listener : mAdvancedListeners) {
+                    ((RetriableAdvancedListener) listener).onReconnecting(SELF);
+                }
             }
         }
 
         @Override
         public void onReconnected(Session session) {
-            if (mAdvancedListener != null) {
-                mAdvancedListener.onReconnected(SELF);
+            if ( mAdvancedListeners != null ) {
+                for (AdvancedListener listener : mAdvancedListeners) {
+                    ((RetriableAdvancedListener) listener).onReconnected(SELF);
+                }
             }
         }
     };
@@ -972,33 +1053,39 @@ public class OTWrapper {
 
         @Override
         public void onVideoDisabled(SubscriberKit subscriber, String reason) {
-            if (mBasicListener != null) {
-                mBasicListener.onRemoteVideoChange(SELF, subscriber.getStream().getStreamId(), reason,
-                        false, subscriber.getSubscribeToVideo());
+            if ( mBasicListeners != null ) {
+                for (BasicListener listener : mBasicListeners) {
+                    ((RetriableBasicListener) listener).onRemoteVideoChange(SELF, subscriber.getStream().getStreamId(), reason,
+                            false, subscriber.getSubscribeToVideo());
+                }
             }
         }
 
         @Override
         public void onVideoEnabled(SubscriberKit subscriber, String reason) {
-            if (mBasicListener != null) {
-                mBasicListener.onRemoteVideoChange(SELF, subscriber.getStream().getStreamId(), reason,
-                        true, subscriber.getSubscribeToVideo());
+            if ( mBasicListeners != null ) {
+                for (BasicListener listener : mBasicListeners) {
+                    ((RetriableBasicListener) listener).onRemoteVideoChange(SELF, subscriber.getStream().getStreamId(), reason,
+                            true, subscriber.getSubscribeToVideo());
+                }
             }
         }
 
         @Override
         public void onVideoDisableWarning(SubscriberKit subscriber) {
-            if (mAdvancedListener != null) {
-                mAdvancedListener.
-                        onVideoQualityWarning(SELF, subscriber.getStream().getStreamId());
+            if ( mAdvancedListeners != null ) {
+                for (AdvancedListener listener : mAdvancedListeners) {
+                    ((RetriableAdvancedListener) listener).onVideoQualityWarning(SELF, subscriber.getStream().getStreamId());
+                }
             }
         }
 
         @Override
         public void onVideoDisableWarningLifted(SubscriberKit subscriber) {
-            if (mAdvancedListener != null) {
-                mAdvancedListener.
-                        onVideoQualityWarningLifted(SELF, subscriber.getStream().getStreamId());
+            if ( mAdvancedListeners != null ) {
+                for (AdvancedListener listener : mAdvancedListeners) {
+                    ((RetriableAdvancedListener) listener).onVideoQualityWarningLifted(SELF, subscriber.getStream().getStreamId());
+                }
             }
         }
     };
@@ -1007,17 +1094,20 @@ public class OTWrapper {
 
         @Override
         public void onCameraChanged(Publisher publisher, int i) {
-            if (mAdvancedListener != null) {
-                mAdvancedListener.onCameraChanged(SELF);
+            if ( mAdvancedListeners != null ) {
+                for (AdvancedListener listener : mAdvancedListeners) {
+                    ((RetriableAdvancedListener) listener).onCameraChanged(SELF);
+                }
             }
         }
 
         @Override
         public void onCameraError(Publisher publisher, OpentokError opentokError) {
             Log.d(LOG_TAG, "onCameraError: onError " + opentokError.getMessage());
-
-            if (mAdvancedListener != null) {
-                mAdvancedListener.onError(SELF, opentokError);
+            if ( mAdvancedListeners != null ) {
+                for (AdvancedListener listener : mAdvancedListeners) {
+                    ((RetriableAdvancedListener) listener).onError(SELF, opentokError);
+                }
             }
         }
     };

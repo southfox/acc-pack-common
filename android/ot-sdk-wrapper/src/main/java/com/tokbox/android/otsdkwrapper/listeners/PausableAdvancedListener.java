@@ -115,5 +115,4 @@ public class PausableAdvancedListener<Wrapper> implements RetriableAdvancedListe
             }
         });
     }
-
 }
