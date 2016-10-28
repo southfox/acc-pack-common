@@ -77,7 +77,6 @@ var OpenTokSDK = function () {
 
     validateCredentials(credentials);
     this.credentials = credentials;
-    this.eventListeners = {};
     this.internalState = new State();
     this.session = OT.initSession(credentials.apiKey, credentials.sessionId);
     this.setInternalListeners();
@@ -140,37 +139,6 @@ var OpenTokSDK = function () {
       var _session2;
 
       (_session2 = this.session).off.apply(_session2, arguments);
-    }
-
-    /**
-     * Trigger an event and fire all registered callbacks
-     * @param {String} event - The name of the event
-     * @param {*} data - Data to be passed to callback functions
-     */
-
-  }, {
-    key: 'triggerEvent',
-    value: function triggerEvent(event, data) {
-      var eventCallbacks = this.eventListeners[event];
-      if (!eventCallbacks) {
-        return;
-      }
-      eventCallbacks.forEach(function (callback) {
-        return callback(data, event);
-      });
-    }
-
-    /**
-     * Register a callback for an event
-     * @param {String} event - The event name
-     * @param {Function} callback
-     */
-
-  }, {
-    key: 'registerListener',
-    value: function registerListener(event, callback) {
-      this.eventListeners[event] = this.eventListeners[event] || new Set();
-      this.eventListeners[event].add(callback);
     }
 
     /**

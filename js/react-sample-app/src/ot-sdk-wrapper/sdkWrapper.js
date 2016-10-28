@@ -46,7 +46,6 @@ class OpenTokSDK {
   constructor(credentials, eventListeners) {
     validateCredentials(credentials);
     this.credentials = credentials;
-    this.eventListeners = {};
     this.internalState = new State();
     this.session = OT.initSession(credentials.apiKey, credentials.sessionId);
     this.setInternalListeners();
@@ -87,29 +86,6 @@ class OpenTokSDK {
    */
   off(...args) {
     this.session.off(...args);
-  }
-
-  /**
-   * Trigger an event and fire all registered callbacks
-   * @param {String} event - The name of the event
-   * @param {*} data - Data to be passed to callback functions
-   */
-  triggerEvent(event, data) {
-    const eventCallbacks = this.eventListeners[event];
-    if (!eventCallbacks) {
-      return;
-    }
-    eventCallbacks.forEach(callback => callback(data, event));
-  }
-
-  /**
-   * Register a callback for an event
-   * @param {String} event - The event name
-   * @param {Function} callback
-   */
-  registerListener(event, callback) {
-    this.eventListeners[event] = this.eventListeners[event] || new Set();
-    this.eventListeners[event].add(callback);
   }
 
   /**
