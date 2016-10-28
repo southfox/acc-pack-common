@@ -117,8 +117,8 @@ class OpenTokSDK {
             resolve(publisher);
           } else {
             this.publishPreview(publisher)
-            .then(resolve)
-            .catch(reject);
+              .then(resolve)
+              .catch(reject);
           }
         }).catch(reject);
     });
@@ -140,10 +140,11 @@ class OpenTokSDK {
       });
     });
   }
-    /**
-     * Stop publishing a stream
-     * @param {Object} publisher - An OpenTok publisher object
-     */
+
+  /**
+   * Stop publishing a stream
+   * @param {Object} publisher - An OpenTok publisher object
+   */
   unpublish(publisher) {
     const type = publisher.stream.videoType;
     const state = stateMap.get(this);

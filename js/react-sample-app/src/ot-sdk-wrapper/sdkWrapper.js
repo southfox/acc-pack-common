@@ -137,6 +137,7 @@ class OpenTokSDK {
       });
     });
   }
+
   /**
    * Stop publishing a stream
    * @param {Object} publisher - An OpenTok publisher object

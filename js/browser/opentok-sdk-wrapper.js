@@ -200,6 +200,7 @@ var OpenTokSDK = function () {
         });
       });
     }
+
     /**
      * Stop publishing a stream
      * @param {Object} publisher - An OpenTok publisher object
