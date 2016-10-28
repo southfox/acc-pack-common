@@ -32,14 +32,26 @@ var logging = require('./logging');
 var State = require('./state');
 
 /**
+ * Internal variables
+ */
+
+/** Map instance of OpenTokSDK to state */
+var stateMap = new WeakMap();
+
+/**
+ * Internal methods
+ */
+
+/**
  * Ensures that we have the required credentials
  * @param {Object} credentials
  * @param {String} credentials.apiKey
  * @param {String} credentials.sessionId
  * @param {String} credentials.token
+ * @returns {Object}
  */
 var validateCredentials = function validateCredentials() {
-  var credentials = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+  var credentials = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
   var required = ['apiKey', 'sessionId', 'token'];
   required.forEach(function (credential) {
@@ -47,6 +59,7 @@ var validateCredentials = function validateCredentials() {
       logging.error(credential + ' is a required credential');
     }
   });
+  return credentials;
 };
 
 /**
@@ -75,9 +88,8 @@ var OpenTokSDK = function () {
   function OpenTokSDK(credentials, eventListeners) {
     _classCallCheck(this, OpenTokSDK);
 
-    validateCredentials(credentials);
-    this.credentials = credentials;
-    this.internalState = new State();
+    this.credentials = validateCredentials(credentials);
+    stateMap.set(this, new State());
     this.session = OT.initSession(credentials.apiKey, credentials.sessionId);
     this.setInternalListeners();
     eventListeners && this.on(eventListeners);
@@ -91,19 +103,18 @@ var OpenTokSDK = function () {
   _createClass(OpenTokSDK, [{
     key: 'setInternalListeners',
     value: function setInternalListeners() {
-      var _this = this;
-
       /**
        * Wrap session events and update state when streams are created
        * or destroyed
        */
+      var state = stateMap.get(this);
       this.session.on('streamCreated', function (_ref) {
         var stream = _ref.stream;
-        return _this.internalState.addStream(stream);
+        return state.addStream(stream);
       });
       this.session.on('streamDestroyed', function (_ref2) {
         var stream = _ref2.stream;
-        return _this.internalState.removeStream(stream);
+        return state.removeStream(stream);
       });
     }
 
@@ -152,12 +163,12 @@ var OpenTokSDK = function () {
   }, {
     key: 'publish',
     value: function publish(element, properties, preview) {
-      var _this2 = this;
+      var _this = this;
 
       return new Promise(function (resolve, reject) {
         initPublisher(element, properties) // eslint-disable-next-line no-confusing-arrow
         .then(function (publisher) {
-          return preview ? resolve(publisher) : _this2.publishPreview(publisher);
+          return preview ? resolve(publisher) : _this.publishPreview(publisher);
         }).catch(reject);
       });
     }
@@ -171,13 +182,14 @@ var OpenTokSDK = function () {
   }, {
     key: 'publishPreview',
     value: function publishPreview(publisher) {
-      var _this3 = this;
+      var _this2 = this;
 
       return new Promise(function (resolve, reject) {
-        _this3.session.publish(publisher, function (error) {
+        var state = stateMap.get(_this2);
+        _this2.session.publish(publisher, function (error) {
           error && reject(error);
           var type = publisher.stream.videoType;
-          _this3.internalState.addPublisher(type, publisher);
+          state.addPublisher(type, publisher);
           resolve();
         });
       });
@@ -191,8 +203,9 @@ var OpenTokSDK = function () {
     key: 'unpublish',
     value: function unpublish(publisher) {
       var type = publisher.stream.videoType;
+      var state = stateMap.get(this);
       this.session.unpublish(publisher);
-      this.internalState.removePublisher(type, publisher);
+      state.removePublisher(type, publisher);
     }
 
     /**
@@ -206,14 +219,15 @@ var OpenTokSDK = function () {
   }, {
     key: 'subscribe',
     value: function subscribe(stream, container, options) {
-      var _this4 = this;
+      var _this3 = this;
 
+      var state = stateMap.get(this);
       return new Promise(function (resolve, reject) {
-        var subscriber = _this4.session.subscribe(stream, container, options, function (error) {
+        var subscriber = _this3.session.subscribe(stream, container, options, function (error) {
           if (error) {
             reject(error);
           } else {
-            _this4.internalState.addSubscriber(subscriber);
+            state.addSubscriber(subscriber);
             resolve();
           }
         });
@@ -229,11 +243,12 @@ var OpenTokSDK = function () {
   }, {
     key: 'unsubscribe',
     value: function unsubscribe(subscriber) {
-      var _this5 = this;
+      var _this4 = this;
 
+      var state = stateMap.get(this);
       return new Promise(function (resolve) {
-        _this5.session.unsubscribe(subscriber);
-        _this5.internalState.removeSubscriber(subscriber);
+        _this4.session.unsubscribe(subscriber);
+        state.removeSubscriber(subscriber);
         resolve();
       });
     }
@@ -246,12 +261,12 @@ var OpenTokSDK = function () {
   }, {
     key: 'connect',
     value: function connect() {
-      var _this6 = this;
+      var _this5 = this;
 
       return new Promise(function (resolve, reject) {
-        var token = _this6.credentials.token;
+        var token = _this5.credentials.token;
 
-        _this6.session.connect(token, function (error) {
+        _this5.session.connect(token, function (error) {
           error ? reject(error) : resolve();
         });
       });
@@ -266,10 +281,10 @@ var OpenTokSDK = function () {
   }, {
     key: 'forceDisconnect',
     value: function forceDisconnect(connection) {
-      var _this7 = this;
+      var _this6 = this;
 
       return new Promise(function (resolve, reject) {
-        _this7.session.forceDisconnect(connection, function (error) {
+        _this6.session.forceDisconnect(connection, function (error) {
           error ? reject(error) : resolve();
         });
       });
@@ -284,10 +299,10 @@ var OpenTokSDK = function () {
   }, {
     key: 'forceUnpublish',
     value: function forceUnpublish(stream) {
-      var _this8 = this;
+      var _this7 = this;
 
       return new Promise(function (resolve, reject) {
-        _this8.session.forceUnpublish(stream, function (error) {
+        _this7.session.forceUnpublish(stream, function (error) {
           error ? reject(error) : resolve();
         });
       });
@@ -302,10 +317,10 @@ var OpenTokSDK = function () {
   }, {
     key: 'signal',
     value: function signal(_signal) {
-      var _this9 = this;
+      var _this8 = this;
 
       return new Promise(function (resolve, reject) {
-        _this9.session.signal(_signal, function (error) {
+        _this8.session.signal(_signal, function (error) {
           error ? reject(error) : resolve();
         });
       });
@@ -319,7 +334,7 @@ var OpenTokSDK = function () {
     key: 'disconnect',
     value: function disconnect() {
       this.session.disconnect();
-      this.internalState.reset();
+      stateMap.get(this).reset();
     }
 
     /**
@@ -330,7 +345,7 @@ var OpenTokSDK = function () {
   }, {
     key: 'state',
     value: function state() {
-      return this.internalState.all();
+      return stateMap.get(this).all();
     }
   }]);
 

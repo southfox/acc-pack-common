@@ -7,19 +7,32 @@ const logging = require('./logging');
 const State = require('./state');
 
 /**
+ * Internal variables
+ */
+
+/** Map instance of OpenTokSDK to state */
+const stateMap = new WeakMap();
+
+/**
+ * Internal methods
+ */
+
+/**
  * Ensures that we have the required credentials
  * @param {Object} credentials
  * @param {String} credentials.apiKey
  * @param {String} credentials.sessionId
  * @param {String} credentials.token
+ * @returns {Object}
  */
-const validateCredentials = (credentials = []) => {
+const validateCredentials = (credentials = {}) => {
   const required = ['apiKey', 'sessionId', 'token'];
   required.forEach(credential => {
     if (!credentials[credential]) {
       logging.error(`${ credential } is a required credential`);
     }
   });
+  return credentials;
 };
 
 /**
@@ -44,9 +57,8 @@ class OpenTokSDK {
    * @param {Object} [eventListeners]
    */
   constructor(credentials, eventListeners) {
-    validateCredentials(credentials);
-    this.credentials = credentials;
-    this.internalState = new State();
+    this.credentials = validateCredentials(credentials);
+    stateMap.set(this, new State());
     this.session = OT.initSession(credentials.apiKey, credentials.sessionId);
     this.setInternalListeners();
     eventListeners && this.on(eventListeners);
@@ -60,8 +72,9 @@ class OpenTokSDK {
      * Wrap session events and update state when streams are created
      * or destroyed
      */
-    this.session.on('streamCreated', ({ stream }) => this.internalState.addStream(stream));
-    this.session.on('streamDestroyed', ({ stream }) => this.internalState.removeStream(stream));
+    const state = stateMap.get(this);
+    this.session.on('streamCreated', ({ stream }) => state.addStream(stream));
+    this.session.on('streamDestroyed', ({ stream }) => state.removeStream(stream));
   }
 
   /**
@@ -109,10 +122,11 @@ class OpenTokSDK {
    */
   publishPreview(publisher) {
     return new Promise((resolve, reject) => {
+      const state = stateMap.get(this);
       this.session.publish(publisher, error => {
         error && reject(error);
         const type = publisher.stream.videoType;
-        this.internalState.addPublisher(type, publisher);
+        state.addPublisher(type, publisher);
         resolve();
       });
     });
@@ -123,8 +137,9 @@ class OpenTokSDK {
    */
   unpublish(publisher) {
     const type = publisher.stream.videoType;
+    const state = stateMap.get(this);
     this.session.unpublish(publisher);
-    this.internalState.removePublisher(type, publisher);
+    state.removePublisher(type, publisher);
   }
 
   /**
@@ -135,12 +150,13 @@ class OpenTokSDK {
    * @returns {Promise} <resolve: empty, reject: Error>
    */
   subscribe(stream, container, options) {
+    const state = stateMap.get(this);
     return new Promise((resolve, reject) => {
       const subscriber = this.session.subscribe(stream, container, options, error => {
         if (error) {
           reject(error);
         } else {
-          this.internalState.addSubscriber(subscriber);
+          state.addSubscriber(subscriber);
           resolve();
         }
       });
@@ -153,9 +169,10 @@ class OpenTokSDK {
    * @returns {Promise} <resolve: empty>
    */
   unsubscribe(subscriber) {
+    const state = stateMap.get(this);
     return new Promise(resolve => {
       this.session.unsubscribe(subscriber);
-      this.internalState.removeSubscriber(subscriber);
+      state.removeSubscriber(subscriber);
       resolve();
     });
   }
@@ -217,7 +234,7 @@ class OpenTokSDK {
    */
   disconnect() {
     this.session.disconnect();
-    this.internalState.reset();
+    stateMap.get(this).reset();
   }
 
   /**
@@ -225,7 +242,7 @@ class OpenTokSDK {
    * @returns {Object} Streams, publishers, subscribers, and stream map
    */
   state() {
-    return this.internalState.all();
+    return stateMap.get(this).all();
   }
 }
 
