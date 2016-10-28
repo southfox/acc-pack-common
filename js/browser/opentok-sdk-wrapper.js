@@ -162,13 +162,19 @@ var OpenTokSDK = function () {
 
   }, {
     key: 'publish',
-    value: function publish(element, properties, preview) {
+    value: function publish(element, properties) {
       var _this = this;
+
+      var preview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
       return new Promise(function (resolve, reject) {
         initPublisher(element, properties) // eslint-disable-next-line no-confusing-arrow
         .then(function (publisher) {
-          return preview ? resolve(publisher) : _this.publishPreview(publisher);
+          if (preview) {
+            resolve(publisher);
+          } else {
+            _this.publishPreview(publisher).then(resolve).catch(reject);
+          }
         }).catch(reject);
       });
     }
@@ -190,7 +196,7 @@ var OpenTokSDK = function () {
           error && reject(error);
           var type = publisher.stream.videoType;
           state.addPublisher(type, publisher);
-          resolve();
+          resolve(publisher);
         });
       });
     }

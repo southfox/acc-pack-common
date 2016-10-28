@@ -108,10 +108,16 @@ class OpenTokSDK {
    * @param {Boolean} preview - Create a publisher with publishing to the session
    * @returns {Promise} <resolve: Object, reject: Error>
    */
-  publish(element, properties, preview) {
+  publish(element, properties, preview = false) {
     return new Promise((resolve, reject) => {
       initPublisher(element, properties) // eslint-disable-next-line no-confusing-arrow
-      .then(publisher => preview ? resolve(publisher) : this.publishPreview(publisher)).catch(reject);
+      .then(publisher => {
+        if (preview) {
+          resolve(publisher);
+        } else {
+          this.publishPreview(publisher).then(resolve).catch(reject);
+        }
+      }).catch(reject);
     });
   }
 
@@ -127,7 +133,7 @@ class OpenTokSDK {
         error && reject(error);
         const type = publisher.stream.videoType;
         state.addPublisher(type, publisher);
-        resolve();
+        resolve(publisher);
       });
     });
   }
