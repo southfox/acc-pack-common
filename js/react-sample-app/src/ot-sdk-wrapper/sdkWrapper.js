@@ -4,7 +4,6 @@
  * Dependencies
  */
 const logging = require('./logging');
-const sessionEvents = require('./events');
 const State = require('./state');
 
 /**

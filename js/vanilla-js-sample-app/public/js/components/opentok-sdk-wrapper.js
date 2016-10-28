@@ -1,11 +1,4 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-'use strict';
-
-var events = ['archiveStarted', 'archiveStopped', 'connectionCreated', 'connectionDestroyed', 'sessionConnected', 'sessionDisconnected', 'sessionReconnected', 'sessionReconnecting', 'signal', 'streamCreated', 'streamDestroyed', 'streamPropertyChanged'];
-
-module.exports = events;
-
-},{}],2:[function(require,module,exports){
 "use strict";
 
 // eslint-disable-next-line no-console
@@ -22,7 +15,7 @@ module.exports = {
   error: error
 };
 
-},{}],3:[function(require,module,exports){
+},{}],2:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -36,7 +29,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
  * Dependencies
  */
 var logging = require('./logging');
-var sessionEvents = require('./events');
 var State = require('./state');
 
 /**
@@ -384,7 +376,7 @@ if (global === window) {
 module.exports = OpenTokSDK;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./events":1,"./logging":2,"./state":4}],4:[function(require,module,exports){
+},{"./logging":1,"./state":3}],3:[function(require,module,exports){
 "use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -580,4 +572,4 @@ var State = function () {
 
 module.exports = State;
 
-},{}]},{},[3]);
+},{}]},{},[2]);
