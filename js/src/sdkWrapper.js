@@ -274,10 +274,15 @@ class OpenTokSDK {
 
   /**
    * Send a signal using the OpenTok signaling apiKey
-   * @param {Object} signal
+   * @param {String} type
+   * @param {*} signalData
+   * @param {Object} [to] - An OpenTok connection object
    * @returns {Promise} <resolve: empty, reject: Error>
+   * https://tokbox.com/developer/guides/signaling/js/
    */
-  signal(signal) {
+  signal(type, signalData, to) {
+    const data = JSON.stringify(signalData);
+    const signal = to ? { type, data, to } : { type, data };
     return new Promise((resolve, reject) => {
       this.session.signal(signal, (error) => {
         error ? reject(error) : resolve();
