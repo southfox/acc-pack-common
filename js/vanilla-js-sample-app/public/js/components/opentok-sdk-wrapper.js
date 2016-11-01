@@ -98,11 +98,25 @@ var OpenTokSDK = function () {
   }
 
   /**
-   * Wrap OpenTok session events
+   * Determines if a connection object is my local connection
+   * @param {Object} connection - An OpenTok connection object
+   * @returns {Boolean}
    */
 
 
   _createClass(OpenTokSDK, [{
+    key: 'isMe',
+    value: function isMe(connection) {
+      var session = this.session;
+
+      return session && session.connection.connectionId === connection.connectionId;
+    }
+
+    /**
+     * Wrap OpenTok session events
+     */
+
+  }, {
     key: 'setInternalListeners',
     value: function setInternalListeners() {
       /**
@@ -144,7 +158,6 @@ var OpenTokSDK = function () {
         if (typeof event !== 'string' || typeof callback !== 'function') {
           logging.errror(paramsError);
         }
-        console.log('what is this in bind', _this);
         _this.session.on(event, callback.bind(_this));
       };
 

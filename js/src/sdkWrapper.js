@@ -66,6 +66,16 @@ class OpenTokSDK {
   }
 
   /**
+   * Determines if a connection object is my local connection
+   * @param {Object} connection - An OpenTok connection object
+   * @returns {Boolean}
+   */
+  isMe(connection) {
+    const { session } = this;
+    return session && session.connection.connectionId === connection.connectionId;
+  }
+
+  /**
    * Wrap OpenTok session events
    */
   setInternalListeners() {
@@ -97,7 +107,6 @@ class OpenTokSDK {
       if (typeof event !== 'string' || typeof callback !== 'function') {
         logging.errror(paramsError);
       }
-      console.log('what is this in bind', this);
       this.session.on(event, callback.bind(this));
     };
 
