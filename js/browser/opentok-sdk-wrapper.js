@@ -284,7 +284,7 @@ var OpenTokSDK = function () {
             reject(error);
           } else {
             state.addSubscriber(subscriber);
-            resolve();
+            resolve(subscriber);
           }
         });
       });

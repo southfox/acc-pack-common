@@ -207,7 +207,7 @@ class OpenTokSDK {
           reject(error);
         } else {
           state.addSubscriber(subscriber);
-          resolve();
+          resolve(subscriber);
         }
       });
     });
