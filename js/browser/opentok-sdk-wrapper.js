@@ -119,16 +119,14 @@ var OpenTokSDK = function () {
    * @param {String} credentials.apiKey
    * @param {String} credentials.sessionId
    * @param {String} credentials.token
-   * @param {Object} [eventListeners]
    */
-  function OpenTokSDK(credentials, eventListeners) {
+  function OpenTokSDK(credentials) {
     _classCallCheck(this, OpenTokSDK);
 
     this.credentials = validateCredentials(credentials);
     stateMap.set(this, new State());
     this.session = OT.initSession(credentials.apiKey, credentials.sessionId);
     this.setInternalListeners();
-    eventListeners && this.on(eventListeners);
   }
 
   /**
@@ -321,14 +319,18 @@ var OpenTokSDK = function () {
 
     /**
      * Connect to the OpenTok session
+     * @param {Array | Object} [eventListeners] - An object (or array of objects) with
+     *        eventName/callback k/v pairs
      * @returns {Promise} <resolve: empty, reject: Error>
      */
 
   }, {
     key: 'connect',
-    value: function connect() {
+    value: function connect(eventListeners) {
       var _this5 = this;
 
+      this.off();
+      eventListeners && this.on(eventListeners);
       return new Promise(function (resolve, reject) {
         var token = _this5.credentials.token;
 
@@ -337,6 +339,7 @@ var OpenTokSDK = function () {
         });
       });
     }
+
     /**
      * Force a remote connection to leave the session
      * @param {Object} connection
