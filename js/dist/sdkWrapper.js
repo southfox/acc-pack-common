@@ -78,16 +78,50 @@ class OpenTokSDK {
   }
 
   /**
-   * Register a callback for a specific event or pass an object
-   * with event => callback key/values to register callbacks for
-   * multiple events.
-   * @param {String | Object} [events] - The name of the events
+   * Register a callback for a specific event, pass an object
+   * with event => callback key/values (or an array of objects)
+   * to register callbacks for multiple events.
+   * @param {String | Object | Array} [events] - The name of the events
    * @param {Function} [callback]
-   * @param {Function} [context]
    * https://tokbox.com/developer/sdks/js/reference/Session.html#on
    */
   on(...args) {
-    this.session.on(...args);
+    /**
+     * Binds and sets a single event listener on the OpenTok session
+     * @param {String} event - The name of the event
+     * @param {Function} callback
+     */
+    const bindListener = (event, callback) => {
+      const paramsError = '\'on\' requires a string and a function to create an event listener.';
+      if (typeof event !== 'string' || typeof callback !== 'function') {
+        logging.errror(paramsError);
+      }
+      console.log('what is this in bind', this);
+      this.session.on(event, callback.bind(this));
+    };
+
+    /**
+     * Create listeners from an object with event/callback k/v pairs
+     * @param {Object} listeners
+     */
+    const createListenersFromObject = listeners => {
+      Object.keys(listeners).forEach(eventName => {
+        bindListener(eventName, listeners[eventName]);
+      });
+    };
+
+    if (args.length >= 2) {
+      bindListener(args[0], args[1]);
+    } else if (typeof args[0] === 'object') {
+      const eventListeners = args[0];
+      if (Array.isArray(eventListeners)) {
+        eventListeners.forEach(listener => {
+          createListenersFromObject(listener);
+        });
+      } else {
+        createListenersFromObject(eventListeners);
+      }
+    }
   }
 
   /**
