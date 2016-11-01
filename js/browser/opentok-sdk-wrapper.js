@@ -33,7 +33,6 @@ var State = require('./state');
 
 /* Internal variables */
 
-// Map instance of OpenTokSDK to state
 var stateMap = new WeakMap();
 
 /* Internal methods */
@@ -112,9 +111,11 @@ var bindListeners = function bindListeners(target, context, listeners) {
   }
 };
 
+/** Class representing an OpenTok SDK Wrapper */
+
 var OpenTokSDK = function () {
   /**
-   * Initialize the SDK Wrapper
+   * Create an SDK Wrapper
    * @param {Object} credentials
    * @param {String} credentials.apiKey
    * @param {String} credentials.sessionId

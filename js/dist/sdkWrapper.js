@@ -6,7 +6,6 @@ const State = require('./state');
 
 /* Internal variables */
 
-// Map instance of OpenTokSDK to state
 const stateMap = new WeakMap();
 
 /* Internal methods */
@@ -79,9 +78,10 @@ const bindListeners = (target, context, listeners) => {
   }
 };
 
+/** Class representing an OpenTok SDK Wrapper */
 class OpenTokSDK {
   /**
-   * Initialize the SDK Wrapper
+   * Create an SDK Wrapper
    * @param {Object} credentials
    * @param {String} credentials.apiKey
    * @param {String} credentials.sessionId
