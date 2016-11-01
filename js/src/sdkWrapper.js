@@ -146,6 +146,52 @@ class OpenTokSDK {
   }
 
   /**
+   * Enable or disable local publisher audio
+   * @param {Boolean} enable
+   */
+  enablePublisherAudio(enable) {
+    const { publishers } = stateMap.get(this).currentPubSub();
+    Object.keys(publishers.camera).forEach((publisherId) => {
+      publishers.camera[publisherId].publishAudio(enable);
+    });
+  }
+
+  /**
+   * Enable or disable local publisher video
+   * @param {Boolean} enable
+   */
+  enablePublisherVideo(enable) {
+    const { publishers } = stateMap.get(this).currentPubSub();
+    Object.keys(publishers.camera).forEach((publisherId) => {
+      publishers.camera[publisherId].publishVideo(enable);
+    });
+  }
+
+  /**
+   * Enable or disable local subscriber audio
+   * @param {String} streamId
+   * @param {Boolean} enable
+   */
+  enableSubscriberAudio(streamId, enable) {
+    const { streamMap, subscribers } = stateMap.get(this).all();
+    const subscriberId = streamMap[streamId];
+    const subscriber = subscribers.camera[subscriberId] || subscribers.screen[subscriberId];
+    subscriber && subscriber.subscribeToVideo(enable);
+  }
+
+  /**
+   * Enable or disable local subscriber video
+   * @param {String} streamId
+   * @param {Boolean} enable
+   */
+  enableSubscriberVideo(streamId, enable) {
+    const { streamMap, subscribers } = stateMap.get(this).all();
+    const subscriberId = streamMap[streamId];
+    const subscriber = subscribers.camera[subscriberId] || subscribers.screen[subscriberId];
+    subscriber && subscriber.subscribeToAudio(enable);
+  }
+
+  /**
    * Create and publish a stream
    * @param {String | Object} element - The target element
    * @param {Object} properties - The publisher properties

@@ -117,14 +117,15 @@ class App extends Component {
   toggleLocalAudio() {
     const { localPublisherId, publishers, localAudioEnabled } = this.state;
     const enabled = !localAudioEnabled;
-    publishers.camera[localPublisherId].publishAudio(enabled)
+    otSDK.enablePublisherAudio(enabled);
     this.setState({ localAudioEnabled: enabled });
   }
 
   toggleLocalVideo() {
     const { localPublisherId, publishers, localVideoEnabled } = this.state;
     const enabled = !localVideoEnabled;
-    publishers.camera[localPublisherId].publishVideo(enabled)
+    otSDK.enablePublisherVideo(enabled);
+
     this.setState({ localVideoEnabled: enabled });
   }
 

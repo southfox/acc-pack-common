@@ -203,6 +203,74 @@ var OpenTokSDK = function () {
     }
 
     /**
+     * Enable or disable local publisher audio
+     * @param {Boolean} enable
+     */
+
+  }, {
+    key: 'enablePublisherAudio',
+    value: function enablePublisherAudio(enable) {
+      var _stateMap$get$current = stateMap.get(this).currentPubSub(),
+          publishers = _stateMap$get$current.publishers;
+
+      Object.keys(publishers.camera).forEach(function (publisherId) {
+        publishers.camera[publisherId].publishAudio(enable);
+      });
+    }
+
+    /**
+     * Enable or disable local publisher video
+     * @param {Boolean} enable
+     */
+
+  }, {
+    key: 'enablePublisherVideo',
+    value: function enablePublisherVideo(enable) {
+      var _stateMap$get$current2 = stateMap.get(this).currentPubSub(),
+          publishers = _stateMap$get$current2.publishers;
+
+      Object.keys(publishers.camera).forEach(function (publisherId) {
+        publishers.camera[publisherId].publishVideo(enable);
+      });
+    }
+
+    /**
+     * Enable or disable local subscriber audio
+     * @param {String} streamId
+     * @param {Boolean} enable
+     */
+
+  }, {
+    key: 'enableSubscriberAudio',
+    value: function enableSubscriberAudio(streamId, enable) {
+      var _stateMap$get$all = stateMap.get(this).all(),
+          streamMap = _stateMap$get$all.streamMap,
+          subscribers = _stateMap$get$all.subscribers;
+
+      var subscriberId = streamMap[streamId];
+      var subscriber = subscribers.camera[subscriberId] || subscribers.screen[subscriberId];
+      subscriber && subscriber.subscribeToVideo(enable);
+    }
+
+    /**
+     * Enable or disable local subscriber video
+     * @param {String} streamId
+     * @param {Boolean} enable
+     */
+
+  }, {
+    key: 'enableSubscriberVideo',
+    value: function enableSubscriberVideo(streamId, enable) {
+      var _stateMap$get$all2 = stateMap.get(this).all(),
+          streamMap = _stateMap$get$all2.streamMap,
+          subscribers = _stateMap$get$all2.subscribers;
+
+      var subscriberId = streamMap[streamId];
+      var subscriber = subscribers.camera[subscriberId] || subscribers.screen[subscriberId];
+      subscriber && subscriber.subscribeToAudio(enable);
+    }
+
+    /**
      * Create and publish a stream
      * @param {String | Object} element - The target element
      * @param {Object} properties - The publisher properties
