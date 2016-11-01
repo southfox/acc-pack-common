@@ -1,21 +1,15 @@
 /* global OT */
 
-/**
- * Dependencies
- */
+/* Dependencies */
 const logging = require('./logging');
 const State = require('./state');
 
-/**
- * Internal variables
- */
+/* Internal variables */
 
-/** Map instance of OpenTokSDK to state */
+// Map instance of OpenTokSDK to state
 const stateMap = new WeakMap();
 
-/**
- * Internal methods
- */
+/* Internal methods */
 
 /**
  * Ensures that we have the required credentials
@@ -46,6 +40,44 @@ const initPublisher = (element, properties) => new Promise((resolve, reject) => 
     error ? reject(error) : resolve(publisher);
   });
 });
+
+/**
+ * Binds and sets a single event listener on the OpenTok session
+ * @param {String} event - The name of the event
+ * @param {Function} callback
+ */
+const bindListener = (target, context, event, callback) => {
+  const paramsError = '\'on\' requires a string and a function to create an event listener.';
+  if (typeof event !== 'string' || typeof callback !== 'function') {
+    logging.error(paramsError);
+  }
+  target.on(event, callback.bind(context));
+};
+
+/**
+ * Bind and set event listeners
+ * @param {Object} target - An OpenTok session, publisher, or subscriber object
+ * @param {Object} context - The context to which to bind event listeners
+ * @param {Object | Array} listeners - An object (or array of objects) with
+ *        eventName/callback k/v pairs
+ */
+const bindListeners = (target, context, listeners) => {
+  /**
+   * Create listeners from an object with event/callback k/v pairs
+   * @param {Object} listeners
+   */
+  const createListenersFromObject = eventListeners => {
+    Object.keys(eventListeners).forEach(event => {
+      bindListener(target, context, event, eventListeners[event]);
+    });
+  };
+
+  if (Array.isArray(listeners)) {
+    listeners.forEach(listener => createListenersFromObject(listener));
+  } else {
+    createListenersFromObject(listeners);
+  }
+};
 
 class OpenTokSDK {
   /**
@@ -96,40 +128,10 @@ class OpenTokSDK {
    * https://tokbox.com/developer/sdks/js/reference/Session.html#on
    */
   on(...args) {
-    /**
-     * Binds and sets a single event listener on the OpenTok session
-     * @param {String} event - The name of the event
-     * @param {Function} callback
-     */
-    const bindListener = (event, callback) => {
-      const paramsError = '\'on\' requires a string and a function to create an event listener.';
-      if (typeof event !== 'string' || typeof callback !== 'function') {
-        logging.errror(paramsError);
-      }
-      this.session.on(event, callback.bind(this));
-    };
-
-    /**
-     * Create listeners from an object with event/callback k/v pairs
-     * @param {Object} listeners
-     */
-    const createListenersFromObject = listeners => {
-      Object.keys(listeners).forEach(eventName => {
-        bindListener(eventName, listeners[eventName]);
-      });
-    };
-
-    if (args.length >= 2) {
-      bindListener(args[0], args[1]);
-    } else if (typeof args[0] === 'object') {
-      const eventListeners = args[0];
-      if (Array.isArray(eventListeners)) {
-        eventListeners.forEach(listener => {
-          createListenersFromObject(listener);
-        });
-      } else {
-        createListenersFromObject(eventListeners);
-      }
+    if (args.length === 1 && typeof args[0] === 'object') {
+      bindListeners(this.session, this, args[0]);
+    } else if (args.length === 2) {
+      bindListener(this.session, this, args[0], args[1]);
     }
   }
 
@@ -148,13 +150,16 @@ class OpenTokSDK {
    * Create and publish a stream
    * @param {String | Object} element - The target element
    * @param {Object} properties - The publisher properties
-   * @param {Boolean} preview - Create a publisher with publishing to the session
+   * @param {Array | Object} [eventListeners] - An object (or array of objects) with
+   *        eventName/callback k/v pairs
+   * @param {Boolean} [preview] - Create a publisher with publishing to the session
    * @returns {Promise} <resolve: Object, reject: Error>
    */
-  publish(element, properties, preview = false) {
+  publish(element, properties, eventListeners = null, preview = false) {
     return new Promise((resolve, reject) => {
       initPublisher(element, properties) // eslint-disable-next-line no-confusing-arrow
       .then(publisher => {
+        eventListeners && bindListeners(publisher, this, eventListeners);
         if (preview) {
           resolve(publisher);
         } else {
@@ -196,17 +201,21 @@ class OpenTokSDK {
    * Subscribe to stream
    * @param {Object} stream
    * @param {String | Object} container - The id of the container or a reference to the element
-   * @param {Object} [options]
+   * @param {Object} [properties]
+   * @param {Array | Object} [eventListeners] - An object (or array of objects) with
+   *        eventName/callback k/v pairs
    * @returns {Promise} <resolve: empty, reject: Error>
+   * https://tokbox.com/developer/sdks/js/reference/Session.html#subscribe
    */
-  subscribe(stream, container, options) {
+  subscribe(stream, container, properties, eventListeners) {
     const state = stateMap.get(this);
     return new Promise((resolve, reject) => {
-      const subscriber = this.session.subscribe(stream, container, options, error => {
+      const subscriber = this.session.subscribe(stream, container, properties, error => {
         if (error) {
           reject(error);
         } else {
           state.addSubscriber(subscriber);
+          eventListeners && bindListeners(subscriber, this, eventListeners);
           resolve(subscriber);
         }
       });
@@ -239,7 +248,6 @@ class OpenTokSDK {
       });
     });
   }
-
   /**
    * Force a remote connection to leave the session
    * @param {Object} connection

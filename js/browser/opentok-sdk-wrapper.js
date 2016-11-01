@@ -27,22 +27,16 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 /* global OT */
 
-/**
- * Dependencies
- */
+/* Dependencies */
 var logging = require('./logging');
 var State = require('./state');
 
-/**
- * Internal variables
- */
+/* Internal variables */
 
-/** Map instance of OpenTokSDK to state */
+// Map instance of OpenTokSDK to state
 var stateMap = new WeakMap();
 
-/**
- * Internal methods
- */
+/* Internal methods */
 
 /**
  * Ensures that we have the required credentials
@@ -76,6 +70,46 @@ var initPublisher = function initPublisher(element, properties) {
       error ? reject(error) : resolve(publisher);
     });
   });
+};
+
+/**
+ * Binds and sets a single event listener on the OpenTok session
+ * @param {String} event - The name of the event
+ * @param {Function} callback
+ */
+var bindListener = function bindListener(target, context, event, callback) {
+  var paramsError = '\'on\' requires a string and a function to create an event listener.';
+  if (typeof event !== 'string' || typeof callback !== 'function') {
+    logging.error(paramsError);
+  }
+  target.on(event, callback.bind(context));
+};
+
+/**
+ * Bind and set event listeners
+ * @param {Object} target - An OpenTok session, publisher, or subscriber object
+ * @param {Object} context - The context to which to bind event listeners
+ * @param {Object | Array} listeners - An object (or array of objects) with
+ *        eventName/callback k/v pairs
+ */
+var bindListeners = function bindListeners(target, context, listeners) {
+  /**
+   * Create listeners from an object with event/callback k/v pairs
+   * @param {Object} listeners
+   */
+  var createListenersFromObject = function createListenersFromObject(eventListeners) {
+    Object.keys(eventListeners).forEach(function (event) {
+      bindListener(target, context, event, eventListeners[event]);
+    });
+  };
+
+  if (Array.isArray(listeners)) {
+    listeners.forEach(function (listener) {
+      return createListenersFromObject(listener);
+    });
+  } else {
+    createListenersFromObject(listeners);
+  }
 };
 
 var OpenTokSDK = function () {
@@ -146,42 +180,10 @@ var OpenTokSDK = function () {
   }, {
     key: 'on',
     value: function on() {
-      var _this = this;
-
-      /**
-       * Binds and sets a single event listener on the OpenTok session
-       * @param {String} event - The name of the event
-       * @param {Function} callback
-       */
-      var bindListener = function bindListener(event, callback) {
-        var paramsError = '\'on\' requires a string and a function to create an event listener.';
-        if (typeof event !== 'string' || typeof callback !== 'function') {
-          logging.errror(paramsError);
-        }
-        _this.session.on(event, callback.bind(_this));
-      };
-
-      /**
-       * Create listeners from an object with event/callback k/v pairs
-       * @param {Object} listeners
-       */
-      var createListenersFromObject = function createListenersFromObject(listeners) {
-        Object.keys(listeners).forEach(function (eventName) {
-          bindListener(eventName, listeners[eventName]);
-        });
-      };
-
-      if (arguments.length >= 2) {
-        bindListener(arguments.length <= 0 ? undefined : arguments[0], arguments.length <= 1 ? undefined : arguments[1]);
-      } else if (_typeof(arguments.length <= 0 ? undefined : arguments[0]) === 'object') {
-        var eventListeners = arguments.length <= 0 ? undefined : arguments[0];
-        if (Array.isArray(eventListeners)) {
-          eventListeners.forEach(function (listener) {
-            createListenersFromObject(listener);
-          });
-        } else {
-          createListenersFromObject(eventListeners);
-        }
+      if (arguments.length === 1 && _typeof(arguments.length <= 0 ? undefined : arguments[0]) === 'object') {
+        bindListeners(this.session, this, arguments.length <= 0 ? undefined : arguments[0]);
+      } else if (arguments.length === 2) {
+        bindListener(this.session, this, arguments.length <= 0 ? undefined : arguments[0], arguments.length <= 1 ? undefined : arguments[1]);
       }
     }
 
@@ -205,24 +207,28 @@ var OpenTokSDK = function () {
      * Create and publish a stream
      * @param {String | Object} element - The target element
      * @param {Object} properties - The publisher properties
-     * @param {Boolean} preview - Create a publisher with publishing to the session
+     * @param {Array | Object} [eventListeners] - An object (or array of objects) with
+     *        eventName/callback k/v pairs
+     * @param {Boolean} [preview] - Create a publisher with publishing to the session
      * @returns {Promise} <resolve: Object, reject: Error>
      */
 
   }, {
     key: 'publish',
     value: function publish(element, properties) {
-      var _this2 = this;
+      var _this = this;
 
-      var preview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+      var eventListeners = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+      var preview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
       return new Promise(function (resolve, reject) {
         initPublisher(element, properties) // eslint-disable-next-line no-confusing-arrow
         .then(function (publisher) {
+          eventListeners && bindListeners(publisher, _this, eventListeners);
           if (preview) {
             resolve(publisher);
           } else {
-            _this2.publishPreview(publisher).then(resolve).catch(reject);
+            _this.publishPreview(publisher).then(resolve).catch(reject);
           }
         }).catch(reject);
       });
@@ -237,11 +243,11 @@ var OpenTokSDK = function () {
   }, {
     key: 'publishPreview',
     value: function publishPreview(publisher) {
-      var _this3 = this;
+      var _this2 = this;
 
       return new Promise(function (resolve, reject) {
-        var state = stateMap.get(_this3);
-        _this3.session.publish(publisher, function (error) {
+        var state = stateMap.get(_this2);
+        _this2.session.publish(publisher, function (error) {
           error && reject(error);
           var type = publisher.stream.videoType;
           state.addPublisher(type, publisher);
@@ -268,22 +274,26 @@ var OpenTokSDK = function () {
      * Subscribe to stream
      * @param {Object} stream
      * @param {String | Object} container - The id of the container or a reference to the element
-     * @param {Object} [options]
+     * @param {Object} [properties]
+     * @param {Array | Object} [eventListeners] - An object (or array of objects) with
+     *        eventName/callback k/v pairs
      * @returns {Promise} <resolve: empty, reject: Error>
+     * https://tokbox.com/developer/sdks/js/reference/Session.html#subscribe
      */
 
   }, {
     key: 'subscribe',
-    value: function subscribe(stream, container, options) {
-      var _this4 = this;
+    value: function subscribe(stream, container, properties, eventListeners) {
+      var _this3 = this;
 
       var state = stateMap.get(this);
       return new Promise(function (resolve, reject) {
-        var subscriber = _this4.session.subscribe(stream, container, options, function (error) {
+        var subscriber = _this3.session.subscribe(stream, container, properties, function (error) {
           if (error) {
             reject(error);
           } else {
             state.addSubscriber(subscriber);
+            eventListeners && bindListeners(subscriber, _this3, eventListeners);
             resolve(subscriber);
           }
         });
@@ -299,11 +309,11 @@ var OpenTokSDK = function () {
   }, {
     key: 'unsubscribe',
     value: function unsubscribe(subscriber) {
-      var _this5 = this;
+      var _this4 = this;
 
       var state = stateMap.get(this);
       return new Promise(function (resolve) {
-        _this5.session.unsubscribe(subscriber);
+        _this4.session.unsubscribe(subscriber);
         state.removeSubscriber(subscriber);
         resolve();
       });
@@ -317,17 +327,16 @@ var OpenTokSDK = function () {
   }, {
     key: 'connect',
     value: function connect() {
-      var _this6 = this;
+      var _this5 = this;
 
       return new Promise(function (resolve, reject) {
-        var token = _this6.credentials.token;
+        var token = _this5.credentials.token;
 
-        _this6.session.connect(token, function (error) {
+        _this5.session.connect(token, function (error) {
           error ? reject(error) : resolve();
         });
       });
     }
-
     /**
      * Force a remote connection to leave the session
      * @param {Object} connection
@@ -337,10 +346,10 @@ var OpenTokSDK = function () {
   }, {
     key: 'forceDisconnect',
     value: function forceDisconnect(connection) {
-      var _this7 = this;
+      var _this6 = this;
 
       return new Promise(function (resolve, reject) {
-        _this7.session.forceDisconnect(connection, function (error) {
+        _this6.session.forceDisconnect(connection, function (error) {
           error ? reject(error) : resolve();
         });
       });
@@ -355,10 +364,10 @@ var OpenTokSDK = function () {
   }, {
     key: 'forceUnpublish',
     value: function forceUnpublish(stream) {
-      var _this8 = this;
+      var _this7 = this;
 
       return new Promise(function (resolve, reject) {
-        _this8.session.forceUnpublish(stream, function (error) {
+        _this7.session.forceUnpublish(stream, function (error) {
           error ? reject(error) : resolve();
         });
       });
@@ -376,12 +385,12 @@ var OpenTokSDK = function () {
   }, {
     key: 'signal',
     value: function signal(type, signalData, to) {
-      var _this9 = this;
+      var _this8 = this;
 
       var data = JSON.stringify(signalData);
       var signal = to ? { type: type, data: data, to: to } : { type: type, data: data };
       return new Promise(function (resolve, reject) {
-        _this9.session.signal(signal, function (error) {
+        _this8.session.signal(signal, function (error) {
           error ? reject(error) : resolve();
         });
       });
