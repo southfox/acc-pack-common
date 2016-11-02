@@ -154,7 +154,7 @@ public class OTWrapper {
      * Get the number of connections for the current session
      * @return connections count
      */
-    public int getConnectionsCound() {
+    public int getConnectionsCount() {
         return mConnectionsCount;
     }
 
@@ -256,7 +256,7 @@ public class OTWrapper {
                 isSharingScreen = false;
                 startSharingScreen = false;
 
-                dettachPublisherView(); //toreview
+                dettachPublisherScreenView(); //toreview
                 mScreenPublisher = null;
             }
         }
@@ -573,10 +573,9 @@ public class OTWrapper {
     }
 
     private synchronized void publishIfReady() {
-        Log.d(LOG_TAG, "publishIfReady: " + mSessionConnection + ", " + mScreenPublisher + ", " +
+        Log.d(LOG_TAG, "publishIfReady: " + mSessionConnection + ", " + mPublisher + ", " +
                 startPublishing);
         if (mSessionConnection != null && mPublisher != null && startPublishing) {
-
             if (!isPreviewing) {
                 attachPublisherView();
             }
@@ -589,12 +588,12 @@ public class OTWrapper {
     }
 
     private synchronized  void publishIfScreenReady(){
-        Log.d(LOG_TAG, "publishIfReady: " + mSessionConnection + ", " + mScreenPublisher + ", " +
+        Log.d(LOG_TAG, "publishIfScreenReady: " + mSessionConnection + ", " + mScreenPublisher + ", " +
                 startSharingScreen);
         if (mSessionConnection != null && mScreenPublisher != null && startSharingScreen) {
 
             if (!isPreviewing) {
-                attachPublisherView();
+                attachPublisherScreenView();
             }
             if (!isSharingScreen) {
                 mSession.publish(mScreenPublisher);
@@ -981,9 +980,11 @@ public class OTWrapper {
         @Override
         public void onStreamCreated(PublisherKit publisherKit, Stream stream) {
             boolean screensharing = false;
-            isPublishing = true;
             if (stream.getStreamVideoType() == Stream.StreamVideoType.StreamVideoTypeScreen){
                 screensharing = true;
+            }
+            else{
+                isPublishing = true;
             }
             for (BasicListener listener : mBasicListeners) {
                 ((RetriableBasicListener) listener).onStartedSharingMedia(SELF, screensharing);
@@ -992,10 +993,13 @@ public class OTWrapper {
 
         @Override
         public void onStreamDestroyed(PublisherKit publisherKit, Stream stream) {
+            Log.i(LOG_TAG, "ONSTREAM DESTROYED");
             boolean screensharing = false;
-            isPublishing = false;
             if (stream.getStreamVideoType() == Stream.StreamVideoType.StreamVideoTypeScreen){
                 screensharing = true;
+            }
+            else {
+                isPublishing = false;
             }
             for (BasicListener listener : mBasicListeners) {
                 ((RetriableBasicListener) listener).onStoppedSharingMedia(SELF, screensharing);
