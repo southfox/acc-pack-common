@@ -12,7 +12,7 @@ The OpenTok SDK Wrapper provides a wrapper around the [OpenTok.js Client Library
   meta        => The count of all current publishers and subscribers by type
 ```
 
-##Usage 
+##Usage
 
 ```javascript
 const OpenTokSDK = require('opentok-sdk-wrapper');
@@ -26,9 +26,11 @@ const credentials = {
 const otSDK = new OpenTokSDK(credentials);
 ```
 
-##Methods
+Click [here](./react-sample-app) for a sample which demonstrates how to use the `sdk-wrapper` within a React application.
 
-### `connect(eventListeners)` 
+##API
+
+### `connect(eventListeners)`
 
 *Connect to the OpenTok session*
 
@@ -39,11 +41,11 @@ const otSDK = new OpenTokSDK(credentials);
 
 **Returns**: `Promise => <resolve: empty, reject: Error>`
 
-### `disconnect()` 
+### `disconnect()`
 
 *Disconnect from the OpenTok session*
 
-### `enablePublisherAudio(enable)` 
+### `enablePublisherAudio(enable)`
 
 *Enable or disable local publisher audio*
 
@@ -52,7 +54,7 @@ const otSDK = new OpenTokSDK(credentials);
 **enable**: `Boolean` Enable or disable local publisher audio
 
 
-### `enablePublisherVideo(enable)` 
+### `enablePublisherVideo(enable)`
 
 *Enable or disable local publisher video*
 
@@ -61,7 +63,7 @@ const otSDK = new OpenTokSDK(credentials);
 **enable**: `Boolean` Enable or disable local publisher video
 
 
-### `enableSubscriberAudio(streamId, enable)` 
+### `enableSubscriberAudio(streamId, enable)`
 
 *Enable or disable local subscriber audio*
 
@@ -72,7 +74,7 @@ const otSDK = new OpenTokSDK(credentials);
 **enable**: `Boolean` Enable or disable local subscriber audio
 
 
-### `enableSubscriberVideo(streamId, enable)` 
+### `enableSubscriberVideo(streamId, enable)`
 
 *Enable or disable local subscriber video*
 
@@ -82,7 +84,7 @@ const otSDK = new OpenTokSDK(credentials);
 
 **enable**: `Boolean` Enable or disable local subscriber video
 
-### `forceDisconnect(connection)` 
+### `forceDisconnect(connection)`
 
 *Force a remote connection to leave the session*
 
@@ -92,7 +94,7 @@ const otSDK = new OpenTokSDK(credentials);
 
 **Returns**: `Promise => <resolve: empty, reject: Error>`
 
-### `forceUnpublish(stream)` 
+### `forceUnpublish(stream)`
 
 *Force the publisher of a stream to stop publishing the stream*
 
@@ -113,7 +115,7 @@ const otSDK = new OpenTokSDK(credentials);
 **Returns**: `Boolean`
 
 
-### `off(events, callback)` 
+### `off(events, callback)`
 
 *Remove a callback for a specific event. If no parameters are passed,
 all callbacks for the session will be removed.*
@@ -122,9 +124,9 @@ all callbacks for the session will be removed.*
 
 **events**: `String`, The name of the events
 
-**callback**: `Function` 
+**callback**: `Function`
 
-### `on(events, callback)` 
+### `on(events, callback)`
 
 *Register a callback for a specific event, pass an object
 with event => callback key/values (or an array of objects)
@@ -137,7 +139,7 @@ to register callbacks for multiple events.*
 **callback**: `Function`
 
 
-### `publish(element, properties, eventListeners, preview)` 
+### `publish(element, properties, eventListeners, preview)`
 
 *Create and publish a stream*
 
@@ -154,7 +156,7 @@ to register callbacks for multiple events.*
 
 **Returns**: `Promise => <resolve: Object, reject: Error>`
 
-### `publishPreview(publisher)` 
+### `publishPreview(publisher)`
 
 *Publish a 'preview' stream to the session*
 
@@ -164,7 +166,7 @@ to register callbacks for multiple events.*
 
 **Returns**: `Promise => resolve: empty, reject: Error>`
 
-### `signal(type, signalData, to)` 
+### `signal(type, signalData, to)`
 
 *Send a signal using the OpenTok [Signaling API](https://tokbox.com/developer/guides/signaling/js/)*
 
@@ -179,14 +181,14 @@ to register callbacks for multiple events.*
 **Returns**: `Promise => <resolve: empty, reject: Error>`
 
 
-### `state()` 
+### `state()`
 
 *Return the state of the OpenTok session*
 
 **Returns**: `Object` Streams, publishers, subscribers, stream map, and meta data
 
 
-### `subscribe(stream, container, properties, eventListeners)` 
+### `subscribe(stream, container, properties, eventListeners)`
 
 *Subscribe to stream*
 
@@ -203,7 +205,7 @@ to register callbacks for multiple events.*
 
 **Returns**: `Promise => <resolve: empty, reject: Error>`
 
-### `unpublish(publisher)` 
+### `unpublish(publisher)`
 
 *Stop publishing a stream*
 
