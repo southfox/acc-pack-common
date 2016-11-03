@@ -5,15 +5,12 @@ import Spinner from 'react-spinner';
 import classNames from 'classnames';
 import logo from './logo.svg';
 import OpenTokSDK from './ot-sdk-wrapper/sdkWrapper.js';
-import config from './config.json';
+import credentials from './credentials.json';
 import './App.css';
 import 'opentok-solutions-css';
 
-const credentials = {
-  apiKey: config.apiKey,
-  sessionId: config.sessionId,
-  token: config.token,
-};
+
+const otSDK = new OpenTokSDK(credentials);
 
 const callProperties = {
   insertMode: 'append',
@@ -25,9 +22,12 @@ const callProperties = {
   }
 };
 
+
+
 /**
  * Build classes for container elements based on state
  * @param {Object} state
+ * @returns {Object}
  */
 const containerClasses = (state) => {
   const { active, meta, localAudioEnabled, localVideoEnabled } = state;
@@ -58,7 +58,6 @@ const startCallMask = start =>
     <div className="message button clickable" onClick={start}>Click to Start Call</div>
   </div>;
 
-const otSDK = new OpenTokSDK(credentials);
 
 class App extends Component {
 
