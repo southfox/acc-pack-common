@@ -111,7 +111,10 @@ var bindListeners = function bindListeners(target, context, listeners) {
   }
 };
 
-/** Class representing an OpenTok SDK Wrapper */
+/**
+ * @class
+ * Represents an OpenTok SDK Wrapper
+ */
 
 var OpenTokSDK = function () {
   /**

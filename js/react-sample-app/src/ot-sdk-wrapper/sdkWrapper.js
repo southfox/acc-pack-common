@@ -78,7 +78,10 @@ const bindListeners = (target, context, listeners) => {
   }
 };
 
-/** Class representing an OpenTok SDK Wrapper */
+/**
+ * @class
+ * Represents an OpenTok SDK Wrapper
+ */
 class OpenTokSDK {
   /**
    * Create an SDK Wrapper
