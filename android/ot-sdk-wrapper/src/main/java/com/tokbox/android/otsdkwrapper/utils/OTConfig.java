@@ -3,6 +3,9 @@ package com.tokbox.android.otsdkwrapper.utils;
 
 import android.util.Log;
 
+/**
+ * Defines the OpenTok Configuration to be used in the communication.
+ */
 public class OTConfig {
 
     private static final String LOG_TAG = OTConfig.class.getSimpleName();
@@ -16,37 +19,69 @@ public class OTConfig {
     boolean subscribeToSelf = false; //optional
     boolean subscribeAutomatically = false; //optional
 
+    /**
+     * Creates a new OTConfig instance using a builder pattern.
+     * @param builder
+     */
     public OTConfig(OTConfigBuilder builder) {
         this.sessionId = builder.sessionId;
         this.token = builder.token;
         this.apiKey = builder.apiKey;
     }
 
+    /**
+     * Returns the OpenTok sessionId
+     * @return the OpenTok sessionId
+     */
     public String getSessionId() {
         return sessionId;
     }
 
+    /**
+     * Returns the OpenTok token
+     * @return the OpenTok token
+     */
     public String getToken() {
         return token;
     }
 
+    /**
+     * Returns the OpenTok apiKey
+     * @return the OpenTok apiKey
+     */
     public String getApiKey() {
         return apiKey;
     }
 
-
+    /**
+     * Returns the name of the OpenTok session
+     * @return the OpenTok name session
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Returns the subscribe to self status
+     * @return Whether to subscribe to self (<code>true</code>) or not (
+     *                     <code>false</code>).
+     */
     public boolean isSubscribeToSelf(){
         return subscribeToSelf;
     }
 
+    /**
+     * Returns the subscribe automatically status
+     * @return Whether to subscribe automatically (<code>true</code>) or not (
+     *                     <code>false</code>).
+     */
     public boolean isSubscribeAutomatically(){
         return subscribeAutomatically;
     }
 
+    /**
+     * Defines the OTConfig builder pattern
+     */
     public static class OTConfigBuilder {
 
         String sessionId; //required

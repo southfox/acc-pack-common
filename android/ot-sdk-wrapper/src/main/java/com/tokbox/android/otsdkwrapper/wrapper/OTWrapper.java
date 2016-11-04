@@ -38,6 +38,10 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 
+/**
+ * Represents an OpenTok object to enable a video communication.
+ * The first step in using the SDK Wrapper is to initialize it by calling the constructor with the OpenTokConfig parameter.
+ */
 public class OTWrapper {
 
     private static final String LOG_TAG = OTWrapper.class.getSimpleName();
@@ -74,13 +78,15 @@ public class OTWrapper {
     private OTConfig mOTConfig;
     private PreviewConfig mPreviewConfig;
 
-    private BaseVideoRenderer mRemoteRenderer;
+    //custom renderers
+    private BaseVideoRenderer mVideoRemoteRenderer;
+    private BaseVideoRenderer mScreenRemoteRenderer;
 
     /**
-     * Creates a new otwrapper.
+     * Creates a OTWrapper instance.
      *
-     * @param context App/Activity context. Needed by the Opentok APIs
-     * @param config    OTConfig: Information about the OpenTok session. This includes all the needed data to connect
+     * @param context Activity context. Needed by the Opentok APIs
+     * @param config  OTConfig: Information about the OpenTok session. This includes all the needed data to connect.
      */
     public OTWrapper(Context context, OTConfig config) {
         this.mContext = context;
@@ -93,7 +99,8 @@ public class OTWrapper {
     }
 
     /**
-     * Pause the session. The sent video is disabled..
+     * Call this method when the app's activity pauses.
+     * This pauses the video for the local preview and remotes
      */
     public void pause() {
         if (mSession != null) {
@@ -102,7 +109,8 @@ public class OTWrapper {
     }
 
     /**
-     * Resume the session.
+     * Call this method when the app's activity resumes.
+     * This resumes the video for the local preview and remotes.
      * @param resumeEvents Set to true if the events should be resumed
      */
     public void resume(boolean resumeEvents) {
@@ -119,7 +127,9 @@ public class OTWrapper {
     }
 
     /**
-     * Connect to the session.
+     * Connects to the OpenTok session.
+     * When the otwrapper connects, the {@link BasicListener#onConnected(Object, int, String, String)} method is called.
+     * If the otwrapper fails to connect, the {@link BasicListener#onError(Object, OpentokError)} method is called.
      */
     public void connect(){
         Log.i(LOG_TAG, "Connect");
@@ -134,7 +144,9 @@ public class OTWrapper {
     }
 
     /**
-     * Disconnect from the session.
+     * Disconnects from the OpenTok session.
+     * When the otwrapper disconnects, the {@link BasicListener#onDisconnected(Object, int, String, String)}  method is called.
+     * If the otwrapper fails to disconnect, the {@link BasicListener#onError(Object, OpentokError)} methos is called.
      */
     public void disconnect(){
         if (mSession != null ){
@@ -143,7 +155,7 @@ public class OTWrapper {
     }
 
     /**
-     * Get local connectionID
+     * Returns the local connectionID
      * @return the own connectionID
      */
     public String getOwnConnId() {
@@ -151,15 +163,15 @@ public class OTWrapper {
     }
 
     /**
-     * Get the number of connections for the current session
-     * @return connections count
+     * Returns the number of active connections for the current session
+     * @return the number of active connections.
      */
     public int getConnectionsCount() {
         return mConnectionsCount;
     }
 
     /**
-     * Check if the own connection is the oldest in the current session
+     * Checks if the own connection is the oldest in the current session
      * @return Whether the local connection is oldest (<code>true</code>) or not (
      * <code>false</code>).
      */
@@ -168,7 +180,7 @@ public class OTWrapper {
     }
 
     /**
-     * Compare the connections creation times between the local connection and the argument passing
+     * Compares the connections creation times between the local connection and the argument passing
      * @param connectionId The connection we want to compare with
      * @return -1 if the connection passed is newer than the current session connection, 0
      * if they have the same age, and 1 if the connection is older
@@ -184,7 +196,7 @@ public class OTWrapper {
     }
 
     /**
-     * Display the camera's video in the Preview's view before the it starts streaming
+     * Call to display the camera's video in the Preview's view before it starts streaming
      * video.
      * @param config The configuration of the preview
      */
@@ -199,7 +211,7 @@ public class OTWrapper {
     }
 
     /**
-     * Stop the camera's video in the Preview's view.
+     * Call to stop the camera's video in the Preview's view.
      */
     public void stopPreview() {
         if (mPublisher != null && isPreviewing) {
@@ -212,8 +224,9 @@ public class OTWrapper {
     }
 
     /**
-     * Start the local streaming video
+     * Starts the local streaming video
      * @param config The configuration of the preview
+     * @param screensharing Whether to indicate the video or the screen streaming.
      */
     public void startSharingMedia(PreviewConfig config, boolean screensharing) {
         if (!screensharing) {
@@ -235,7 +248,8 @@ public class OTWrapper {
     }
 
     /**
-     * Stop the local streaming video.
+     * Stops the local streaming video.
+     * @param screensharing Wheter to indicate the video or the screen streaming
      */
     public void stopSharingMedia(Boolean screensharing) {
         if (mSession != null ) {
@@ -250,13 +264,13 @@ public class OTWrapper {
                     mPublisher = null;
                 }
             } else {
+                dettachPublisherScreenView();
                 if (mScreenPublisher != null && startSharingScreen) {
                     mSession.unpublish(mScreenPublisher);
                 }
                 isSharingScreen = false;
                 startSharingScreen = false;
 
-                dettachPublisherScreenView(); //toreview
                 mScreenPublisher = null;
             }
         }
@@ -264,7 +278,7 @@ public class OTWrapper {
 
 
     /**
-     * Check Local Media
+     * Returns Local Media status
      * @param type MediaType (Audio or Video)
      * @return Whether the local MediaType is enabled (<code>true</code>) or not (
      * <code>false</code>)
@@ -275,9 +289,10 @@ public class OTWrapper {
     }
 
     /**
-     * Enable or disable the media of the local.
-     * @param type MediaType: audio or video
-     * @param enabled
+     * Enables or disables the local Media.
+     * @param type MediaType (Audio or Video)
+     * @param enabled Whether to enable media (<code>true</code>) or not (
+     *                     <code>false</code>).
      */
     public void enableLocalMedia(MediaType type, boolean enabled){
         if ( mPublisher != null ) {
@@ -298,9 +313,10 @@ public class OTWrapper {
     }
 
     /**
-     * Enable or disable the media of the remote with remoteId.
-     * @param type MediaType: audio or video
-     * @param enabled
+     * Enables or disables the media of the remote with remoteId.
+     * @param type MediaType (Audio or video)
+     * @param enabled Whether to enable MediaType (<code>true</code>) or not (
+     *                     <code>false</code>).
      */
     public void enableRemoteMedia(String remoteId, MediaType type, boolean enabled) {
         if (remoteId != null ) {
@@ -313,18 +329,8 @@ public class OTWrapper {
         }
     }
 
-    private void enableRemoteMedia(Subscriber sub, MediaType type, boolean enabled) {
-        if (sub != null) {
-            if (type == MediaType.VIDEO) {
-                sub.setSubscribeToVideo(enabled);
-            } else {
-                sub.setSubscribeToAudio(enabled);
-            }
-        }
-    }
-
     /**
-     * Return the MediaType status of the remote with remoteId
+     * Returns the MediaType status of the remote with remoteId
      * @param type MediaType: audio or video
      * @return Whether the remote MediaType is enabled (<code>true</code>) or not (
      * <code>false</code>).
@@ -350,7 +356,6 @@ public class OTWrapper {
             mPublisher.cycleCamera();
         }
     }
-
 
     /**
      * Sets a input signal processor. The input processor will process all the signals coming from
@@ -379,7 +384,7 @@ public class OTWrapper {
     }
 
     /**
-     * Get OpenTok Configuration
+     * Returns the OpenTok Configuration
      * @return current OpenTok Configuration
      */
     public OTConfig getOTConfig(){
@@ -387,7 +392,7 @@ public class OTWrapper {
     }
 
     /**
-     * Registers a listener for a given signal.
+     * Registers a signal listener for a given signal.
      * @param signalName Name of the signal this listener will listen to. Pass "*" if the listener
      *                   is to be invoked for all signals.
      * @param listener Listener that will be invoked when a signal is received.
@@ -406,7 +411,7 @@ public class OTWrapper {
     }
 
     /**
-     * Remove signal listener.
+     * Removes a signal listener.
      * @param signalName Name of the signal this listener will listen to. Pass "*" if the listener
      *                   is to be invoked for all signals.
      * @param listener Listener to be removed.
@@ -422,6 +427,11 @@ public class OTWrapper {
         }
     }
 
+    /**
+     * Adds a {@link BasicListener}
+     * @param listener
+     * @return The added listener
+     */
     public BasicListener addBasicListener(BasicListener<OTWrapper> listener) {
         Log.d(LOG_TAG, "Adding BasicListener");
         boolean isWrapped = listener instanceof RetriableBasicListener;
@@ -435,21 +445,22 @@ public class OTWrapper {
             }
             refreshPeerList();
         }
-        else {
-            //todo return the basiclistener if it is existed
-            /*if ((!isWrapped && mBasicListener!= null &&
-                    mBasicListener.getInternalListener() == listener) ||
-                    (isWrapped && mBasicListener == listener)) {
-                return mBasicListener;
-            }*/
-        }
         return basicListener;
     }
 
+    /**
+     * Removes a {@link BasicListener}
+     * @param listener
+     */
     public void removeBasicListener(BasicListener listener) {
         mBasicListeners.remove(listener);
     }
 
+    /**
+     * Adds an {@link AdvancedListener}
+     * @param listener
+     * @return The removed listener
+     */
     public AdvancedListener addAdvancedListener(AdvancedListener<OTWrapper> listener) {
         Log.d(LOG_TAG, "Adding BasicListener");
         boolean isWrapped = listener instanceof RetriableAdvancedListener;
@@ -463,24 +474,20 @@ public class OTWrapper {
             }
             refreshPeerList();
         }
-        else {
-            //todo return the basiclistener if it is existed
-            /*if ((!isWrapped && mBasicListener!= null &&
-                    mBasicListener.getInternalListener() == listener) ||
-                    (isWrapped && mBasicListener == listener)) {
-                return mBasicListener;
-            }*/
-        }
         return advancedListener;
     }
 
+    /**
+     * Removes an {@link AdvancedListener}
+     * @param listener
+     */
     public void removeAdvancedListener(AdvancedListener listener) {
         mAdvancedListeners.remove(listener);
     }
 
     /**
-     * Remove send a new signal
-     * @param signalInfo contents of the signal to be sent
+     * Sends a new signal
+     * @param signalInfo {@link SignalInfo} of the signal to be sent
      */
     public void sendSignal(SignalInfo signalInfo) {
         if (mOutputSignalProtocol != null) {
@@ -499,7 +506,8 @@ public class OTWrapper {
         if (mPublisher != null) {
             return new StreamStatus(mPublisher.getView(),
                     mPublisher.getPublishAudio(), mPublisher.getPublishVideo(),
-                    mPublisher.getStream().hasAudio(), mPublisher.getStream().hasVideo(), mPublisher.getStream().getStreamVideoType());
+                    mPublisher.getStream().hasAudio(), mPublisher.getStream().hasVideo(), mPublisher.getStream().getStreamVideoType(),
+                        mPublisher.getStream().getVideoWidth(), mPublisher.getStream().getVideoHeight());
         }
         return null;
     }
@@ -515,13 +523,13 @@ public class OTWrapper {
         if (sub != null) {
             Stream subSt = sub.getStream();
             return new StreamStatus(sub.getView(), sub.getSubscribeToAudio(), sub.getSubscribeToVideo(),
-                    subSt.hasAudio(), subSt.hasVideo(), subSt.getStreamVideoType());
+                    subSt.hasAudio(), subSt.hasVideo(), subSt.getStreamVideoType(), subSt.getVideoWidth(), subSt.getVideoHeight());
         }
         return null;
     }
 
     /**
-     * Set the  Video Scale style for a remote
+     * Sets the  Video Scale style for a remote
      * @param remoteId the remote subscriber ID
      * @param style VideoScale value: FILL or FIT
      */
@@ -536,7 +544,7 @@ public class OTWrapper {
     }
 
     /**
-     * Set the Local Video Style
+     * Sets the Local Video Style
      * @param style VideoScale value: FILL or FIT
      */
     public void setLocalStyle(VideoScale style) {
@@ -548,11 +556,23 @@ public class OTWrapper {
         }
     }
 
-    //to-review: it will apply to all the subscribers, or do we want to apply a specific subscriberID
-    public void setRemoteVideoRenderer(BaseVideoRenderer renderer) {
-        mRemoteRenderer = renderer;
+    /**
+     * Sets a custom video renderer for the remote
+     * @param renderer
+     */
+    public void setRemoteVideoRenderer(BaseVideoRenderer renderer) { //to-review: it will apply to all the subscribers
+        mVideoRemoteRenderer = renderer;
     }
 
+    /**
+     * Sets a custom screen renderer for the remote
+     * @param renderer
+     */
+    public void setRemoteScreenRenderer(BaseVideoRenderer renderer) {
+        mScreenRemoteRenderer = renderer;
+    }
+
+    //Private methods
     private void cleanup() {
         mSession = null;
         mPublisher = null;
@@ -639,7 +659,6 @@ public class OTWrapper {
     }
 
     private void createScreenPublisher(PreviewConfig config){
-        //TODO: add more cases
         Log.d(LOG_TAG, "createScreenPublisher: " + config);
         if (config != null) {
             if (config.getResolution() != Publisher.CameraCaptureResolution.MEDIUM ||
@@ -728,6 +747,16 @@ public class OTWrapper {
             }
 
 
+        }
+    }
+
+    private void enableRemoteMedia(Subscriber sub, MediaType type, boolean enabled) {
+        if (sub != null) {
+            if (type == MediaType.VIDEO) {
+                sub.setSubscribeToVideo(enabled);
+            } else {
+                sub.setSubscribeToAudio(enabled);
+            }
         }
     }
 
@@ -852,9 +881,13 @@ public class OTWrapper {
                     ((RetriableBasicListener)listener).onRemoteJoined(SELF, subId);
                 }
             }
-
-            if  (mRemoteRenderer != null ) {
-                sub.setRenderer(mRemoteRenderer);
+            if (stream.getStreamVideoType() == Stream.StreamVideoType.StreamVideoTypeCamera  && mVideoRemoteRenderer != null ){
+                sub.setRenderer(mVideoRemoteRenderer);
+            }
+            else {
+                if (stream.getStreamVideoType() == Stream.StreamVideoType.StreamVideoTypeScreen  && mScreenRemoteRenderer != null ){
+                    sub.setRenderer(mScreenRemoteRenderer);
+                }
             }
             mSession.subscribe(sub);
         }
@@ -919,7 +952,6 @@ public class OTWrapper {
     };
 
     private SubscriberKit.SubscriberListener mSubscriberListener =
-
             new SubscriberKit.SubscriberListener() {
                 @Override
                 public void onConnected(SubscriberKit sub) {
@@ -1052,7 +1084,7 @@ public class OTWrapper {
     private SubscriberKit.VideoListener mVideoListener = new SubscriberKit.VideoListener() {
         @Override
         public void onVideoDataReceived(SubscriberKit subscriberKit) {
-            // To-Do: Should I do something here?
+            //to-review: a new listener to indicate the first frame received
         }
 
         @Override

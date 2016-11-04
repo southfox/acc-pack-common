@@ -5,6 +5,9 @@ import com.opentok.android.BaseVideoCapturer;
 import com.opentok.android.BaseVideoRenderer;
 import com.opentok.android.Publisher;
 
+/**
+ * Defines the configuration of the local preview
+ */
 public class PreviewConfig {
     private static final String LOG_TAG = PreviewConfig.class.getSimpleName();
 
@@ -16,6 +19,10 @@ public class PreviewConfig {
     BaseVideoCapturer capturer; //optional
     BaseVideoRenderer renderer; //optional
 
+    /**
+     * Creates a new PreviewConfig instance using a builder pattern
+     * @param builder
+     */
     public PreviewConfig(PreviewConfigBuilder builder) {
         this.name = builder.name;
         this.audioTrack = builder.audioTrack;
@@ -26,40 +33,76 @@ public class PreviewConfig {
         this.renderer = builder.renderer;
     }
 
+    /**
+     * Returns the name of the local preview
+     * @return the name of the local preview
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Returns the audio track status
+     * @return Whether to have audio track (<code>true</code>) or not (
+     *                     <code>false</code>).
+     */
     public boolean isAudioTrack() {
         return audioTrack;
     }
 
+    /**
+     * Returns the video track status
+     * @return Whether to have video track (<code>true</code>) or not (
+     *                     <code>false</code>).
+     */
     public boolean isVideoTrack() {
         return videoTrack;
     }
 
+    /**
+     * Returns the video resolution
+     * @return the video resolution
+     */
     public Publisher.CameraCaptureResolution getResolution() {
         return resolution;
     }
 
+    /**
+     * Returns the video framerate
+     * @return the video framerate
+     */
     public Publisher.CameraCaptureFrameRate getFrameRate() {
         return frameRate;
     }
 
+    /**
+     * Returns the video capturer
+     * @return the video capturer
+     */
     public BaseVideoCapturer getCapturer() {
         return capturer;
     }
 
+    /**
+     * Returns the video renderer
+     * @return the video renderer
+     */
     public BaseVideoRenderer getRenderer() {
         return renderer;
     }
 
+    /**
+     * Sets the video framerate
+     * @param newFrameRate
+     */
     public void setFrameRate(Publisher.CameraCaptureFrameRate newFrameRate) {
         frameRate = newFrameRate;
     }
 
+    /**
+     * Defines the PreviewConfig builder
+     */
     public static class PreviewConfigBuilder {
-
         String name=""; //optinal
         boolean audioTrack = true; //optional
         boolean videoTrack = true; //optional
