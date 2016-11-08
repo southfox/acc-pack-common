@@ -1,6 +1,6 @@
 # Change Log
 
-The changelog for `SDK-Wrapper` Android, iOS and JS.
+The changelog for the Android, iOS and JS `SDK-Wrapper`.
 
 --------------------------------------
 
