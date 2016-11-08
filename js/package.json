@@ -1,0 +1,36 @@
+{
+  "name": "opentok-sdk-wrapper",
+  "version": "0.0.1",
+  "description": "A wrapper for the opentok js client",
+  "main": "dist/sdk-wrapper.js",
+  "scripts": {
+    "build:node": "babel -d ./dist/ ./src/",
+    "build:browser": "browserify src/sdkWrapper.js -o browser/opentok-sdk-wrapper.js -t [ babelify --presets [ es2015 ] ]",
+    "build:react-sample": "cp dist/* react-sample-app/src/ot-sdk-wrapper/",
+    "build:js-sample": "cp browser/opentok-sdk-wrapper.js vanilla-js-sample-app/public/js/components/opentok-sdk-wrapper.js",
+    "build": "npm run build:node && npm run build:browser && npm run build:react-sample && npm run build:js-sample"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/opentok/sdk-wrapper.git"
+  },
+  "keywords": [
+    "opentok",
+    "web-rtc"
+  ],
+  "author": "adrice727@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/opentok/sdk-wrapper/issues"
+  },
+  "homepage": "https://github.com/opentok/sdk-wrapper#readme",
+  "devDependencies": {
+    "babel-preset-es2015": "^6.16.0",
+    "babelify": "^7.3.0",
+    "eslint": "^3.8.1",
+    "eslint-config-airbnb": "^12.0.0",
+    "eslint-plugin-import": "^1.16.0",
+    "eslint-plugin-jsx-a11y": "^2.2.3",
+    "eslint-plugin-react": "^6.4.1"
+  }
+}
