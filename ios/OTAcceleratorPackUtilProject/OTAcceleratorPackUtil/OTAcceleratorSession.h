@@ -79,4 +79,16 @@
  */
 - (NSSet<id<OTSessionDelegate>> *)getRegisters;
 
+#pragma mark - API proposals
+@property (readonly, nonatomic) NSString *selfConnectionId;
+
+@property (readonly, nonatomic) NSUInteger connectionCount;
+
+- (NSError *)broadcastSignalWithType:(NSString *)type;
+
+- (NSError *)broadcastSignalWithType:(NSString *)type
+                              string:(NSString *)string;
+
+- (void)forceDisconnection;
+
 @end

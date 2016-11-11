@@ -24,6 +24,10 @@
 		A0127ACC1D34675A00CDA3F5 /* TestOneToOneCommunicatorViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A0127ACB1D34675A00CDA3F5 /* TestOneToOneCommunicatorViewController.m */; };
 		A0127AD41D346D7200CDA3F5 /* OTOneToOneCommunicator.h in Headers */ = {isa = PBXBuildFile; fileRef = A0127AD21D346D7200CDA3F5 /* OTOneToOneCommunicator.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A0127AD51D346D7200CDA3F5 /* OTOneToOneCommunicator.m in Sources */ = {isa = PBXBuildFile; fileRef = A0127AD31D346D7200CDA3F5 /* OTOneToOneCommunicator.m */; };
+		A0811A1C1DD65D1500255C89 /* OTPublisherWrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = A0811A1A1DD65D1500255C89 /* OTPublisherWrapper.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		A0811A1D1DD65D1500255C89 /* OTPublisherWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = A0811A1B1DD65D1500255C89 /* OTPublisherWrapper.m */; };
+		A0811A201DD6627500255C89 /* OTSubscriberWrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = A0811A1E1DD6627500255C89 /* OTSubscriberWrapper.h */; };
+		A0811A211DD6627500255C89 /* OTSubscriberWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = A0811A1F1DD6627500255C89 /* OTSubscriberWrapper.m */; };
 		A0E904EA1DBB00DD00270E87 /* TestOneToOneCommunicatorSwitchingViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A0E904E91DBB00DD00270E87 /* TestOneToOneCommunicatorSwitchingViewController.m */; };
 		A0FEABFF1D73B3BF000BDDA4 /* CHANGELOG.md in Sources */ = {isa = PBXBuildFile; fileRef = A0FEABFC1D73B3BF000BDDA4 /* CHANGELOG.md */; };
 		A0FEAC001D73B3BF000BDDA4 /* OTAcceleratorPackUtil.podspec in Resources */ = {isa = PBXBuildFile; fileRef = A0FEABFD1D73B3BF000BDDA4 /* OTAcceleratorPackUtil.podspec */; };
@@ -80,6 +84,10 @@
 		A0127ACB1D34675A00CDA3F5 /* TestOneToOneCommunicatorViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestOneToOneCommunicatorViewController.m; sourceTree = "<group>"; };
 		A0127AD21D346D7200CDA3F5 /* OTOneToOneCommunicator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OTOneToOneCommunicator.h; sourceTree = "<group>"; };
 		A0127AD31D346D7200CDA3F5 /* OTOneToOneCommunicator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OTOneToOneCommunicator.m; sourceTree = "<group>"; };
+		A0811A1A1DD65D1500255C89 /* OTPublisherWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OTPublisherWrapper.h; sourceTree = "<group>"; };
+		A0811A1B1DD65D1500255C89 /* OTPublisherWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OTPublisherWrapper.m; sourceTree = "<group>"; };
+		A0811A1E1DD6627500255C89 /* OTSubscriberWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OTSubscriberWrapper.h; sourceTree = "<group>"; };
+		A0811A1F1DD6627500255C89 /* OTSubscriberWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OTSubscriberWrapper.m; sourceTree = "<group>"; };
 		A0E904E81DBB00DD00270E87 /* TestOneToOneCommunicatorSwitchingViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TestOneToOneCommunicatorSwitchingViewController.h; sourceTree = "<group>"; };
 		A0E904E91DBB00DD00270E87 /* TestOneToOneCommunicatorSwitchingViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestOneToOneCommunicatorSwitchingViewController.m; sourceTree = "<group>"; };
 		A0FEABFC1D73B3BF000BDDA4 /* CHANGELOG.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
@@ -165,6 +173,10 @@
 			isa = PBXGroup;
 			children = (
 				A0127AB71D34654100CDA3F5 /* OTAcceleratorPackUtil.h */,
+				A0811A1A1DD65D1500255C89 /* OTPublisherWrapper.h */,
+				A0811A1B1DD65D1500255C89 /* OTPublisherWrapper.m */,
+				A0811A1E1DD6627500255C89 /* OTSubscriberWrapper.h */,
+				A0811A1F1DD6627500255C89 /* OTSubscriberWrapper.m */,
 				A0127AB81D34654100CDA3F5 /* OTAcceleratorSession.h */,
 				A0127AB91D34654100CDA3F5 /* OTAcceleratorSession.m */,
 				A0127AD21D346D7200CDA3F5 /* OTOneToOneCommunicator.h */,
@@ -181,7 +193,9 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A0811A1C1DD65D1500255C89 /* OTPublisherWrapper.h in Headers */,
 				A0127ABD1D34654100CDA3F5 /* OTAcceleratorSession.h in Headers */,
+				A0811A201DD6627500255C89 /* OTSubscriberWrapper.h in Headers */,
 				A0127AD41D346D7200CDA3F5 /* OTOneToOneCommunicator.h in Headers */,
 				A0127ABC1D34654100CDA3F5 /* OTAcceleratorPackUtil.h in Headers */,
 			);
@@ -306,8 +320,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A0811A211DD6627500255C89 /* OTSubscriberWrapper.m in Sources */,
 				A0127AD51D346D7200CDA3F5 /* OTOneToOneCommunicator.m in Sources */,
 				A0127ABE1D34654100CDA3F5 /* OTAcceleratorSession.m in Sources */,
+				A0811A1D1DD65D1500255C89 /* OTPublisherWrapper.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
