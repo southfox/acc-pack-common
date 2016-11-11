@@ -18,13 +18,6 @@ public class PausableBasicListener<Wrapper> implements RetriableBasicListener<Wr
     }
 
     @Override
-    public BasicListener setInternalListener(BasicListener listener) {
-        BasicListener previous = mUnderlyingListener;
-        mUnderlyingListener = listener;
-        return previous;
-    }
-
-    @Override
     public BasicListener getInternalListener() {
         return mUnderlyingListener;
     }

@@ -10,7 +10,7 @@ import com.opentok.android.OpentokError;
  *
  * @see com.tokbox.android.otsdkwrapper.wrapper.OTWrapper#addBasicListener(BasicListener) method
  */
-public interface BasicListener<Wrapper> {
+public interface BasicListener<Wrapper> extends BaseOTListener {
 
     /**
      * Invoked when there is a new connection (participant) in the communication, included our own connection

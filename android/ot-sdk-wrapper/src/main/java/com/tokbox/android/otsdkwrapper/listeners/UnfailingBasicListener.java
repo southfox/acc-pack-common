@@ -17,13 +17,6 @@ public class UnfailingBasicListener<Wrapper> implements RetriableBasicListener<W
     }
 
     @Override
-    public BasicListener setInternalListener(BasicListener listener) {
-        BasicListener aux = mInternalListener;
-        mInternalListener = listener;
-        return aux;
-    }
-
-    @Override
     public BasicListener getInternalListener() {
         return mInternalListener;
     }

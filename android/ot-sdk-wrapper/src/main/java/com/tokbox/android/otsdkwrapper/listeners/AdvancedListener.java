@@ -7,7 +7,7 @@ import com.opentok.android.OpentokError;
  *
  * @see com.tokbox.android.otsdkwrapper.wrapper.OTWrapper#addAdvancedListener(AdvancedListener) method
  */
-public interface AdvancedListener<Wrapper> {
+public interface AdvancedListener<Wrapper> extends BaseOTListener {
 
     /**
      * Invoked when the camera of the device changed
