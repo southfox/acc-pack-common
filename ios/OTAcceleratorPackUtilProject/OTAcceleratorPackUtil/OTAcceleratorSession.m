@@ -5,16 +5,20 @@
 //
 
 #import "OTAcceleratorSession.h"
-
-static NSString * InternalApiKey = nil;
-static NSString * InternalSessionId = nil;
-static NSString * InternalToken = nil;
+#import <objc/runtime.h>
 
 @interface OTAcceleratorSession() <OTSessionDelegate>
+
+@property (nonatomic) NSString *internalApiKey;
+@property (nonatomic) NSString *internalSessionId;
+@property (nonatomic) NSString *internalToken;
 
 @property (nonatomic) NSMutableSet <id<OTSessionDelegate>> *delegates;
 // in order to signal sessionDidDisconnect: back to inactive registers
 @property (nonatomic) NSMutableSet <id<OTSessionDelegate>> *inactiveDelegate;
+
+@property (nonatomic) NSMutableSet<OTPublisher *> *publishers;
+@property (nonatomic) NSMutableSet<OTSubscriber *> *subscribers;
 
 @end
 
@@ -22,65 +26,92 @@ static NSString * InternalToken = nil;
 
 static OTAcceleratorSession *sharedSession;
 
-- (NSString *)apiKey {
-    return InternalApiKey;
-}
-
-+ (NSSet<id<OTSessionDelegate>> *)getRegisters {
-    return [[OTAcceleratorSession getAcceleratorPackSession].delegates copy];
-}
-
-+ (instancetype)getAcceleratorPackSession {
-    return sharedSession;
-}
-
-+ (void)setOpenTokApiKey:(NSString *)apiKey
-               sessionId:(NSString *)sessionId
-                   token:(NSString *)token {
-    
-    InternalApiKey = apiKey;
-    InternalSessionId = sessionId;
-    InternalToken = token;
-    
-    NSAssert(InternalApiKey.length != 0, @"OpenTok: API key can not be empty, please add it to OneToOneCommunicator");
-    NSAssert(InternalSessionId.length != 0, @"OpenTok: Session Id can not be empty, please add it to OneToOneCommunicator");
-    NSAssert(InternalToken.length != 0, @"OpenTok: Token can not be empty, please add it to OneToOneCommunicator");
-    
-    if (sharedSession.sessionConnectionStatus == OTSessionConnectionStatusConnected ||
-        sharedSession.sessionConnectionStatus == OTSessionConnectionStatusConnecting) {
++ (void)load {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
         
-        OTError *error;
-        [sharedSession disconnect:&error];
-        if (error) {
-            NSLog(@"%s Error: %@", __PRETTY_FUNCTION__, error.localizedDescription);
-        }
+        [OTAcceleratorSession swizzlingSelector:@selector(publish:error:) withSelector:@selector(publishOnThisSesssion:error:)];
+        
+        [OTAcceleratorSession swizzlingSelector:@selector(unpublish:error:) withSelector:@selector(unpublishOnThisSesssion:error:)];
+        
+        [OTAcceleratorSession swizzlingSelector:@selector(subscribe:error:) withSelector:@selector(subscribeOnThisSession:error:)];
+        
+        [OTAcceleratorSession swizzlingSelector:@selector(unsubscribe:error:) withSelector:@selector(unsubscribeOnThisSession:error:)];
+    });
+}
+
++ (void)swizzlingSelector:(SEL)originalSelector withSelector:(SEL)swizzledSelector {
+    
+    Class class = [self class];
+    
+    Method originalMethod = class_getInstanceMethod(class, originalSelector);
+    Method swizzledMethod = class_getInstanceMethod(class, swizzledSelector);
+    
+    // When swizzling a class method, use the following:
+    // Class class = object_getClass((id)self);
+    // ...
+    // Method originalMethod = class_getClassMethod(class, originalSelector);
+    // Method swizzledMethod = class_getClassMethod(class, swizzledSelector);
+    
+    BOOL didAddMethod =
+    class_addMethod(class,
+                    originalSelector,
+                    method_getImplementation(swizzledMethod),
+                    method_getTypeEncoding(swizzledMethod));
+    
+    if (didAddMethod) {
+        class_replaceMethod(class,
+                            swizzledSelector,
+                            method_getImplementation(originalMethod),
+                            method_getTypeEncoding(originalMethod));
+    } else {
+        method_exchangeImplementations(originalMethod, swizzledMethod);
+    }
+}
+
+- (NSString *)apiKey {
+    return _internalApiKey;
+}
+
+- (instancetype)initWithOpenTokApiKey:(NSString *)apiKey
+                            sessionId:(NSString *)sessionId
+                                token:(NSString *)token {
+    
+    NSAssert(apiKey.length != 0, @"OpenTok: API key can not be empty, please add it to OneToOneCommunicator");
+    NSAssert(sessionId.length != 0, @"OpenTok: Session Id can not be empty, please add it to OneToOneCommunicator");
+    NSAssert(token.length != 0, @"OpenTok: Token can not be empty, please add it to OneToOneCommunicator");
+    
+    if (self = [super initWithApiKey:apiKey sessionId:sessionId delegate:self]) {
+        _internalApiKey = apiKey;
+        _internalSessionId = sessionId;
+        _internalToken = token;
+        
+        _delegates = [[NSMutableSet alloc] init];
+        _inactiveDelegate = [[NSMutableSet alloc] init];
+        _publishers = [[NSMutableSet alloc] init];
+        _subscribers = [[NSMutableSet alloc] init];
+    }
+    return self;
+}
+
+- (NSError *)registerWithAccePack:(id)delegate {
+    
+    if ([self.delegates containsObject:delegate]) {
+        return nil;
     }
     
-    // re-init
-    sharedSession = [[OTAcceleratorSession alloc] initWithApiKey:InternalApiKey
-                                                        sessionId:InternalSessionId
-                                                         delegate:nil];
-    sharedSession.delegate = sharedSession;
-    sharedSession.delegates = [[NSMutableSet alloc] init];
-    sharedSession.inactiveDelegate = [[NSMutableSet alloc] init];
-}
-
-+ (NSError *)registerWithAccePack:(id)delegate {
-    
-    OTAcceleratorSession *sharedSession = [OTAcceleratorSession getAcceleratorPackSession];
-    
     if ([delegate conformsToProtocol:@protocol(OTSessionDelegate)]) {
-        if ([sharedSession.inactiveDelegate containsObject:delegate]) {
-            [sharedSession.inactiveDelegate removeObject:delegate];
+        if ([self.inactiveDelegate containsObject:delegate]) {
+            [self.inactiveDelegate removeObject:delegate];
         }
-        [sharedSession.delegates addObject:delegate];
+        [self.delegates addObject:delegate];
     }
     
     // notify sessionDidConnect when session has connected
-    if (sharedSession.sessionConnectionStatus == OTSessionConnectionStatusConnected) {
+    if (self.sessionConnectionStatus == OTSessionConnectionStatusConnected) {
         [delegate sessionDidConnect:sharedSession];
         
-        NSDictionary *streams = sharedSession.streams;
+        NSDictionary *streams = self.streams;
         for (NSString *stream in streams) {
             [delegate session:sharedSession streamCreated:streams[stream]];
         }
@@ -88,40 +119,72 @@ static OTAcceleratorSession *sharedSession;
         return nil;
     }
     
-    if (sharedSession.sessionConnectionStatus == OTSessionConnectionStatusConnecting ||
-        sharedSession.sessionConnectionStatus == OTSessionConnectionStatusReconnecting) return nil;
+    if (self.sessionConnectionStatus == OTSessionConnectionStatusConnecting ||
+        self.sessionConnectionStatus == OTSessionConnectionStatusReconnecting) return nil;
     
     OTError *error;
-    [sharedSession connectWithToken:InternalToken error:&error];
+    [self connectWithToken:self.internalToken error:&error];
     return error;
 }
 
-+ (NSError *)deregisterWithAccePack:(id)delegate {
-    
-    OTAcceleratorSession *sharedSession = [OTAcceleratorSession getAcceleratorPackSession];
+- (NSError *)deregisterWithAccePack:(id)delegate {
     
     // notify sessionDidDisconnect to delegates who has de-registered
-    if ([delegate conformsToProtocol:@protocol(OTSessionDelegate)] && [sharedSession.delegates containsObject:delegate]) {
-        [sharedSession.delegates removeObject:delegate];
-        [sharedSession.inactiveDelegate addObject:delegate];
+    if ([delegate conformsToProtocol:@protocol(OTSessionDelegate)] && [self.delegates containsObject:delegate]) {
+        [self.delegates removeObject:delegate];
+        [self.inactiveDelegate addObject:delegate];
     }
 
-    if (sharedSession.delegates.count == 0) {
+    if (self.delegates.count == 0) {
         
-        if (sharedSession.sessionConnectionStatus == OTSessionConnectionStatusNotConnected ||
-            sharedSession.sessionConnectionStatus == OTSessionConnectionStatusDisconnecting) return nil;
+        if (self.sessionConnectionStatus == OTSessionConnectionStatusNotConnected ||
+            self.sessionConnectionStatus == OTSessionConnectionStatusDisconnecting) return nil;
         
         OTError *error;
-        [sharedSession disconnect:&error];
+        [self disconnect:&error];
         return error;
     }
     return nil;
 }
 
-+ (BOOL)containsAccePack:(id)delegate {
-    
-    OTAcceleratorSession *session = [OTAcceleratorSession getAcceleratorPackSession];
-    return [session.delegates containsObject:delegate];
+- (void)publishOnThisSesssion:(OTPublisher *)publisher error:(OTError *__autoreleasing *)error {
+    if (!publisher) return;
+    [self publishOnThisSesssion:publisher error:error];    // this will call publish:error: because of swizzling
+    [self.publishers addObject:publisher];
+}
+
+- (void)unpublishOnThisSesssion:(OTPublisher *)publisher error:(OTError *__autoreleasing *)error {
+    if (!publisher) return;
+    [self unpublishOnThisSesssion:publisher error:error];
+    [self.publishers removeObject:publisher];
+}
+
+- (void)subscribeOnThisSession:(OTSubscriber *)subscriber error:(OTError *__autoreleasing *)error {
+    if (!subscriber) return;
+    [self subscribeOnThisSession:subscriber error:error];  // this will call subscribe:error: because of swizzling
+    [self.subscribers addObject:subscriber];
+}
+
+- (void)unsubscribeOnThisSession:(OTSubscriber *)subscriber error:(OTError *__autoreleasing *)error {
+    if (!subscriber) return;
+    [self unsubscribeOnThisSession:subscriber error:error];
+    [self.subscribers removeObject:subscriber];
+}
+
+- (NSArray<OTPublisher *> *)getPublishers {
+    return [self.publishers allObjects];
+}
+
+- (NSArray<OTSubscriber *> *)getSubscribers {
+    return [self.subscribers allObjects];
+}
+
+- (BOOL)containsAccePack:(id)delegate {
+    return [self.delegates containsObject:delegate];
+}
+
+- (NSSet<id<OTSessionDelegate>> *)getRegisters {
+    return [self.delegates copy];
 }
 
 #pragma mark - OTSessionDelegate
