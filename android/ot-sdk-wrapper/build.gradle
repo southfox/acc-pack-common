@@ -1,19 +1,16 @@
 apply plugin: 'com.android.library'
 apply plugin: 'maven'
-
 android {
-    compileSdkVersion 24
-    buildToolsVersion "24.0.3"
-
+    compileSdkVersion 25
+    buildToolsVersion "25.0.0"
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 24
+        targetSdkVersion 25
         versionCode 1
         versionName "1.0"
         project.archivesBaseName = "opentok-android-sdk-wrapper"
         project.version = "1.0.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
     }
     buildTypes {
         release {
@@ -21,7 +18,11 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError true
+        disable 'OldTargetApi'
+    }
     libraryVariants.all { variant ->
         variant.outputs.each { output ->
             def outputFile = output.outputFile
@@ -30,22 +31,36 @@ android {
                 output.outputFile = new File(outputFile.parent, fileName)
             }
         }
+        def javadoc = task("generateJavaDoc${variant.name.capitalize()}", type: Javadoc, dependsOn: "generate${variant.name.capitalize()}Sources") {
+            source = 'src/main/java'
+            classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+            destinationDir = file("build/outputs/docs/")
+            title = 'OpenTok Android SDK-Wrapper'
+            //exclude "**/config/**"
+            failOnError false
+        }
+        def zipBundle = task("zipBundle${variant.name.capitalize()}", type: Zip) {
+            from ('build/outputs')
+            include '**/aar/**'
+            include '**/docs/**'
+            exclude '**/lint-results-debug_files/**'
+            destinationDir = file(".")
+            archiveName = "${archivesBaseName}-${version}.zip"
+        }
+        zipBundle.dependsOn build
+        zipBundle.dependsOn javadoc
     }
 }
-
 dependencies {
     repositories {
         maven { url 'http://tokbox.bintray.com/maven' }
     }
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
-    compile 'com.android.support:appcompat-v7:24.2.1'
+    compile 'com.android.support:appcompat-v7:25.0.0'
+    compile 'com.opentok.android:opentok-solutions-logging:+'
     compile 'com.opentok.android:opentok-android-sdk:2.9.+'
     testCompile 'junit:junit:4.12'
 }
-
 if (project.hasProperty("MAVEN_USERNAME") && project.hasProperty("MAVEN_PASSWORD")) {
     uploadArchives {
         repositories {
@@ -61,7 +76,6 @@ if (project.hasProperty("MAVEN_USERNAME") && project.hasProperty("MAVEN_PASSWORD
         }
     }
 }
-
 def checkMaven = task("checkUploadArchivesDeps") {
     doFirst {
         if (!project.hasProperty("MAVEN_USERNAME")) {
@@ -72,9 +86,7 @@ def checkMaven = task("checkUploadArchivesDeps") {
         }
     }
 }
-
 uploadArchives.dependsOn checkMaven
-
 def getRevisionAndTime() {
     def date = new Date()
     def hash = 'git rev-parse --verify HEAD'.execute().text.trim()
