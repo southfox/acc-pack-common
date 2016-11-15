@@ -1,21 +1,14 @@
 /* global OT */
 
-/**
- * Dependencies
- */
+/* Dependencies */
 const logging = require('./logging');
 const State = require('./state');
 
-/**
- * Internal variables
- */
+/* Internal variables */
 
-/** Map instance of OpenTokSDK to state */
 const stateMap = new WeakMap();
 
-/**
- * Internal methods
- */
+/* Internal methods */
 
 /**
  * Ensures that we have the required credentials
@@ -48,21 +41,71 @@ const initPublisher = (element, properties) =>
     });
   });
 
+/**
+ * Binds and sets a single event listener on the OpenTok session
+ * @param {String} event - The name of the event
+ * @param {Function} callback
+ */
+const bindListener = (target, context, event, callback) => {
+  const paramsError = '\'on\' requires a string and a function to create an event listener.';
+  if (typeof event !== 'string' || typeof callback !== 'function') {
+    logging.error(paramsError);
+  }
+  target.on(event, callback.bind(context));
+};
+
+/**
+ * Bind and set event listeners
+ * @param {Object} target - An OpenTok session, publisher, or subscriber object
+ * @param {Object} context - The context to which to bind event listeners
+ * @param {Object | Array} listeners - An object (or array of objects) with
+ *        eventName/callback k/v pairs
+ */
+const bindListeners = (target, context, listeners) => {
+  /**
+   * Create listeners from an object with event/callback k/v pairs
+   * @param {Object} listeners
+   */
+  const createListenersFromObject = (eventListeners) => {
+    Object.keys(eventListeners).forEach((event) => {
+      bindListener(target, context, event, eventListeners[event]);
+    });
+  };
+
+  if (Array.isArray(listeners)) {
+    listeners.forEach((listener) => createListenersFromObject(listener));
+  } else {
+    createListenersFromObject(listeners);
+  }
+};
+
+/**
+ * @class
+ * Represents an OpenTok SDK Wrapper
+ */
 class OpenTokSDK {
   /**
-   * Initialize the SDK Wrapper
+   * Create an SDK Wrapper
    * @param {Object} credentials
    * @param {String} credentials.apiKey
    * @param {String} credentials.sessionId
    * @param {String} credentials.token
-   * @param {Object} [eventListeners]
    */
-  constructor(credentials, eventListeners) {
+  constructor(credentials) {
     this.credentials = validateCredentials(credentials);
     stateMap.set(this, new State());
     this.session = OT.initSession(credentials.apiKey, credentials.sessionId);
     this.setInternalListeners();
-    eventListeners && this.on(eventListeners);
+  }
+
+  /**
+   * Determines if a connection object is my local connection
+   * @param {Object} connection - An OpenTok connection object
+   * @returns {Boolean}
+   */
+  isMe(connection) {
+    const { session } = this;
+    return session && session.connection.connectionId === connection.connectionId;
   }
 
   /**
@@ -79,16 +122,19 @@ class OpenTokSDK {
   }
 
   /**
-   * Register a callback for a specific event or pass an object
-   * with event => callback key/values to register callbacks for
-   * multiple events.
-   * @param {String | Object} [events] - The name of the events
+   * Register a callback for a specific event, pass an object
+   * with event => callback key/values (or an array of objects)
+   * to register callbacks for multiple events.
+   * @param {String | Object | Array} [events] - The name of the events
    * @param {Function} [callback]
-   * @param {Function} [context]
    * https://tokbox.com/developer/sdks/js/reference/Session.html#on
    */
   on(...args) {
-    this.session.on(...args);
+    if (args.length === 1 && typeof args[0] === 'object') {
+      bindListeners(this.session, this, args[0]);
+    } else if (args.length === 2) {
+      bindListener(this.session, this, args[0], args[1]);
+    }
   }
 
   /**
@@ -103,16 +149,65 @@ class OpenTokSDK {
   }
 
   /**
+   * Enable or disable local publisher audio
+   * @param {Boolean} enable
+   */
+  enablePublisherAudio(enable) {
+    const { publishers } = stateMap.get(this).currentPubSub();
+    Object.keys(publishers.camera).forEach((publisherId) => {
+      publishers.camera[publisherId].publishAudio(enable);
+    });
+  }
+
+  /**
+   * Enable or disable local publisher video
+   * @param {Boolean} enable
+   */
+  enablePublisherVideo(enable) {
+    const { publishers } = stateMap.get(this).currentPubSub();
+    Object.keys(publishers.camera).forEach((publisherId) => {
+      publishers.camera[publisherId].publishVideo(enable);
+    });
+  }
+
+  /**
+   * Enable or disable local subscriber audio
+   * @param {String} streamId
+   * @param {Boolean} enable
+   */
+  enableSubscriberAudio(streamId, enable) {
+    const { streamMap, subscribers } = stateMap.get(this).all();
+    const subscriberId = streamMap[streamId];
+    const subscriber = subscribers.camera[subscriberId] || subscribers.screen[subscriberId];
+    subscriber && subscriber.subscribeToVideo(enable);
+  }
+
+  /**
+   * Enable or disable local subscriber video
+   * @param {String} streamId
+   * @param {Boolean} enable
+   */
+  enableSubscriberVideo(streamId, enable) {
+    const { streamMap, subscribers } = stateMap.get(this).all();
+    const subscriberId = streamMap[streamId];
+    const subscriber = subscribers.camera[subscriberId] || subscribers.screen[subscriberId];
+    subscriber && subscriber.subscribeToAudio(enable);
+  }
+
+  /**
    * Create and publish a stream
    * @param {String | Object} element - The target element
    * @param {Object} properties - The publisher properties
-   * @param {Boolean} preview - Create a publisher with publishing to the session
+   * @param {Array | Object} [eventListeners] - An object (or array of objects) with
+   *        eventName/callback k/v pairs
+   * @param {Boolean} [preview] - Create a publisher with publishing to the session
    * @returns {Promise} <resolve: Object, reject: Error>
    */
-  publish(element, properties, preview = false) {
+  publish(element, properties, eventListeners = null, preview = false) {
     return new Promise((resolve, reject) => {
       initPublisher(element, properties) // eslint-disable-next-line no-confusing-arrow
         .then((publisher) => {
+          eventListeners && bindListeners(publisher, this, eventListeners);
           if (preview) {
             resolve(publisher);
           } else {
@@ -156,18 +251,22 @@ class OpenTokSDK {
    * Subscribe to stream
    * @param {Object} stream
    * @param {String | Object} container - The id of the container or a reference to the element
-   * @param {Object} [options]
+   * @param {Object} [properties]
+   * @param {Array | Object} [eventListeners] - An object (or array of objects) with
+   *        eventName/callback k/v pairs
    * @returns {Promise} <resolve: empty, reject: Error>
+   * https://tokbox.com/developer/sdks/js/reference/Session.html#subscribe
    */
-  subscribe(stream, container, options) {
+  subscribe(stream, container, properties, eventListeners) {
     const state = stateMap.get(this);
     return new Promise((resolve, reject) => {
-      const subscriber = this.session.subscribe(stream, container, options, (error) => {
+      const subscriber = this.session.subscribe(stream, container, properties, (error) => {
         if (error) {
           reject(error);
         } else {
           state.addSubscriber(subscriber);
-          resolve();
+          eventListeners && bindListeners(subscriber, this, eventListeners);
+          resolve(subscriber);
         }
       });
     });
@@ -189,9 +288,13 @@ class OpenTokSDK {
 
   /**
    * Connect to the OpenTok session
+   * @param {Array | Object} [eventListeners] - An object (or array of objects) with
+   *        eventName/callback k/v pairs
    * @returns {Promise} <resolve: empty, reject: Error>
    */
-  connect() {
+  connect(eventListeners) {
+    this.off();
+    eventListeners && this.on(eventListeners);
     return new Promise((resolve, reject) => {
       const { token } = this.credentials;
       this.session.connect(token, (error) => {
@@ -199,7 +302,6 @@ class OpenTokSDK {
       });
     });
   }
-
 
   /**
    * Force a remote connection to leave the session
@@ -213,7 +315,6 @@ class OpenTokSDK {
       });
     });
   }
-
 
   /**
    * Force the publisher of a stream to stop publishing the stream
@@ -231,10 +332,15 @@ class OpenTokSDK {
 
   /**
    * Send a signal using the OpenTok signaling apiKey
-   * @param {Object} signal
+   * @param {String} type
+   * @param {*} signalData
+   * @param {Object} [to] - An OpenTok connection object
    * @returns {Promise} <resolve: empty, reject: Error>
+   * https://tokbox.com/developer/guides/signaling/js/
    */
-  signal(signal) {
+  signal(type, signalData, to) {
+    const data = JSON.stringify(signalData);
+    const signal = to ? { type, data, to } : { type, data };
     return new Promise((resolve, reject) => {
       this.session.signal(signal, (error) => {
         error ? reject(error) : resolve();

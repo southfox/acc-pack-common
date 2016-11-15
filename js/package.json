@@ -8,7 +8,7 @@
     "build:browser": "browserify src/sdkWrapper.js -o browser/opentok-sdk-wrapper.js -t [ babelify --presets [ es2015 ] ]",
     "build:react-sample": "cp dist/* react-sample-app/src/ot-sdk-wrapper/",
     "build:js-sample": "cp browser/opentok-sdk-wrapper.js vanilla-js-sample-app/public/js/components/opentok-sdk-wrapper.js",
-    "build": "npm run build:node && npm run build:browser && npm run build:react-sample && npm run build:js-sample"
+    "build": "npm run build:node && npm run build:browser && npm run build:react-sample"
   },
   "repository": {
     "type": "git",
