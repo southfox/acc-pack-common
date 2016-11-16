@@ -169,7 +169,7 @@ class OpenTokSDK {
   enablePublisherVideo(enable) {
     const { publishers } = stateMap.get(this).currentPubSub();
     Object.keys(publishers.camera).forEach(publisherId => {
-      if (this.publisherIsReady(publishers.camera[publishser])) {
+      if (this.publisherIsReady(publishers.camera[publisherId])) {
         publishers.camera[publisherId].publishVideo(enable);
       } else {
         logging.message('Could not toggle publisher video. Publisher has not finished loading.');
