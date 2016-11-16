@@ -14,7 +14,7 @@ The OpenTok SDK Wrapper provides a wrapper around the [OpenTok.js Client Library
 
 ##Usage
 
-#####With `webpack` or `Browserify`:
+*With `webpack` or `Browserify`*:
 
 ```javascript
 const OpenTokSDK = require('opentok-sdk-wrapper');
@@ -28,11 +28,11 @@ const credentials = {
 const otSDK = new OpenTokSDK(credentials);
 ```
 
-#####Without a bundler, you'll need to add the `browser` version of the `sdk-wrapper` to your project:
+*Without a bundler, you'll need to add the `browser` version of the `sdk-wrapper` to your project so that the `OpenTokSDK` constructor is available in `global` scope*:
 ```html
 <script src="your/path/to/browser/open-sdk-wrapper.js"></script>
 ```
-#####With the `OpenTokSDK` constructor available in `global` scope:
+
 ```javascript
 var credentials = {
   apiKey: 'YOUR_OPENTOK_API_KEY',
