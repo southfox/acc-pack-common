@@ -32,7 +32,7 @@ const otSDK = new OpenTokSDK(credentials);
 ```html
 <script src="your/path/to/browser/open-sdk-wrapper.js"></script>
 ```
-#####With the `sdk-wrapper` available in `global` scope:
+#####With the `OpenTokSDK` constructor available in `global` scope:
 ```javascript
 var credentials = {
   apiKey: 'YOUR_OPENTOK_API_KEY',
