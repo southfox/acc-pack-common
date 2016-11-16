@@ -15,8 +15,7 @@ typedef enum : NSUInteger {
 @class OTSDKWrapper;
 @protocol OTSDKWrapperDataSource <NSObject>
 
-- (OTSession *)sessionOfSDKWrapper:(OTSDKWrapper *)wrapper
-                              name:(NSString *)name;
+- (OTSession *)sessionOfSDKWrapper:(OTSDKWrapper *)wrapper;
 
 @end
 
@@ -34,6 +33,9 @@ typedef enum : NSUInteger {
 
 - (instancetype)initWithDataSource:(id<OTSDKWrapperDataSource>)dataSource;
 
+- (instancetype)initWithName:(NSString *)name
+                  dataSource:(id<OTSDKWrapperDataSource>)dataSource;
+
 - (NSError *)broadcastSignalWithType:(NSString *)type;
 
 - (NSError *)broadcastSignalWithType:(NSString *)type
@@ -42,7 +44,7 @@ typedef enum : NSUInteger {
 /**
  *  Force un-publish/un-subscribe, disconnect from session and clean everything
  */
-- (void)forceDisconnection;
+- (void)disconnect;
 
 #pragma mark - connection
 @property (readonly, nonatomic) NSString *selfConnectionId;
@@ -56,21 +58,28 @@ typedef enum : NSUInteger {
 #pragma mark - publisher
 - (UIView *)captureAudioVideo;
 
-- (NSError *)switchAudioVideoPublish;
+- (NSError *)publishAudioVideo:(BOOL)published;
 
-- (void)switchPublishingMedia:(OTSDKWrapperMediaType)mediaType;
+- (void)enablePublishingMedia:(OTSDKWrapperMediaType)mediaType
+                      enabled:(BOOL)enabled;
 
 - (void)switchCamera;
 
 - (void)switchVideoViewScaleBehavior;
 
 #pragma mark - subscirbers
-- (void)newParticipantsObserver:(void (^)(NSString *streamId, UIView *participantView))completion;
+- (void)newParticipantObserver:(void (^)(NSString *streamId))completion;
+
+- (UIView *)addParticipantWithStreamId:(NSString *)streamId
+                                 error:(NSError **)error;
+
+- (NSError *)removeParticipantWithStreamId:(NSString *)streamId;
 
 - (void)participantsLeaveObserver:(void (^)(NSString *streamId))completion;
 
-- (void)switchParticipantWithStreamId:(NSString *)streamId
-                                media:(OTSDKWrapperMediaType)mediaType;
+- (void)enableParticipantWithStreamId:(NSString *)streamId
+                                media:(OTSDKWrapperMediaType)mediaType
+                              enabled:(BOOL)enabled;
 
 - (void)switchParticipantVideoViewScaleBehaviorWithStreamId:(NSString *)streamId;
 
