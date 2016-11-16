@@ -184,7 +184,7 @@ to register callbacks for multiple events.*
 
 ### `signal(type, signalData, to)`
 
-*Send a signal using the OpenTok [Signaling API](https://tokbox.com/developer/guides/signaling/js/)*
+*Send a signal using the OpenTok [Signaling API](https://tokbox.com/developer/guides/signaling/js/).  If a recipient is not provided, the signal will be broadcast to all connections in the session.*
 
 **Parameters**
 
@@ -192,7 +192,7 @@ to register callbacks for multiple events.*
 
 **signalData**: `*` Send a signal using the OpenTok signaling apiKey
 
-**to**: `Object` An OpenTok connection object
+**to**: `Object` An OpenTok connection object.
 
 **Returns**: `Promise => <resolve: empty, reject: Error>`
 
