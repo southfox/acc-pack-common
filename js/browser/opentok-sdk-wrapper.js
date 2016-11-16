@@ -213,13 +213,15 @@ var OpenTokSDK = function () {
   }, {
     key: 'enablePublisherAudio',
     value: function enablePublisherAudio(enable) {
+      var _this = this;
+
       var _stateMap$get$current = stateMap.get(this).currentPubSub(),
           publishers = _stateMap$get$current.publishers;
 
       Object.keys(publishers.camera).forEach(function (publisherId) {
-        try {
+        if (_this.publisherIsReady(publishers.camera[publisherId])) {
           publishers.camera[publisherId].publishAudio(enable);
-        } catch (error) {
+        } else {
           logging.message('Could not toggle publisher audio. Publisher has not finished loading.');
         }
       });
@@ -233,13 +235,15 @@ var OpenTokSDK = function () {
   }, {
     key: 'enablePublisherVideo',
     value: function enablePublisherVideo(enable) {
+      var _this2 = this;
+
       var _stateMap$get$current2 = stateMap.get(this).currentPubSub(),
           publishers = _stateMap$get$current2.publishers;
 
       Object.keys(publishers.camera).forEach(function (publisherId) {
-        try {
+        if (_this2.publisherIsReady(publishers.camera[publishser])) {
           publishers.camera[publisherId].publishVideo(enable);
-        } catch (error) {
+        } else {
           logging.message('Could not toggle publisher video. Publisher has not finished loading.');
         }
       });
@@ -294,7 +298,7 @@ var OpenTokSDK = function () {
   }, {
     key: 'publish',
     value: function publish(element, properties) {
-      var _this = this;
+      var _this3 = this;
 
       var eventListeners = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
       var preview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
@@ -302,11 +306,11 @@ var OpenTokSDK = function () {
       return new Promise(function (resolve, reject) {
         initPublisher(element, properties) // eslint-disable-next-line no-confusing-arrow
         .then(function (publisher) {
-          eventListeners && bindListeners(publisher, _this, eventListeners);
+          eventListeners && bindListeners(publisher, _this3, eventListeners);
           if (preview) {
             resolve(publisher);
           } else {
-            _this.publishPreview(publisher).then(resolve).catch(reject);
+            _this3.publishPreview(publisher).then(resolve).catch(reject);
           }
         }).catch(reject);
       });
@@ -321,15 +325,14 @@ var OpenTokSDK = function () {
   }, {
     key: 'publishPreview',
     value: function publishPreview(publisher) {
-      var _this2 = this;
+      var _this4 = this;
 
       return new Promise(function (resolve, reject) {
-        var state = stateMap.get(_this2);
-        _this2.session.publish(publisher, function (error) {
-          error && reject(error);
+        var state = stateMap.get(_this4);
+        _this4.session.publish(publisher, function (error) {
           var type = publisher.stream.videoType;
           state.addPublisher(type, publisher);
-          resolve(publisher);
+          error ? reject(error) : resolve(publisher);
         });
       });
     }
@@ -349,6 +352,32 @@ var OpenTokSDK = function () {
     }
 
     /**
+     * Has the publisher object finished loading
+     * @param {Object} publisher - An OpenTok publisher object
+     * @returns {Boolean}
+     */
+
+  }, {
+    key: 'publisherIsReady',
+    value: function publisherIsReady(publisher) {
+      return !publisher.isLoading();
+    }
+
+    /**
+     * Does the publisher currently have audio or video
+     * @param {Object} publisher - An OpenTok publisher object
+     * @param {String} type - 'audio' or 'video'
+     * @returns {Boolean}
+     */
+
+  }, {
+    key: 'publisherHas',
+    value: function publisherHas(publisher, type) {
+      var prop = 'has' + (type[0].toUpperCase() + type.slice(1));
+      return publisher[prop];
+    }
+
+    /**
      * Subscribe to stream
      * @param {Object} stream
      * @param {String | Object} container - The id of the container or a reference to the element
@@ -362,16 +391,16 @@ var OpenTokSDK = function () {
   }, {
     key: 'subscribe',
     value: function subscribe(stream, container, properties, eventListeners) {
-      var _this3 = this;
+      var _this5 = this;
 
       var state = stateMap.get(this);
       return new Promise(function (resolve, reject) {
-        var subscriber = _this3.session.subscribe(stream, container, properties, function (error) {
+        var subscriber = _this5.session.subscribe(stream, container, properties, function (error) {
           if (error) {
             reject(error);
           } else {
             state.addSubscriber(subscriber);
-            eventListeners && bindListeners(subscriber, _this3, eventListeners);
+            eventListeners && bindListeners(subscriber, _this5, eventListeners);
             resolve(subscriber);
           }
         });
@@ -387,11 +416,11 @@ var OpenTokSDK = function () {
   }, {
     key: 'unsubscribe',
     value: function unsubscribe(subscriber) {
-      var _this4 = this;
+      var _this6 = this;
 
       var state = stateMap.get(this);
       return new Promise(function (resolve) {
-        _this4.session.unsubscribe(subscriber);
+        _this6.session.unsubscribe(subscriber);
         state.removeSubscriber(subscriber);
         resolve();
       });
@@ -407,14 +436,14 @@ var OpenTokSDK = function () {
   }, {
     key: 'connect',
     value: function connect(eventListeners) {
-      var _this5 = this;
+      var _this7 = this;
 
       this.off();
       eventListeners && this.on(eventListeners);
       return new Promise(function (resolve, reject) {
-        var token = _this5.credentials.token;
+        var token = _this7.credentials.token;
 
-        _this5.session.connect(token, function (error) {
+        _this7.session.connect(token, function (error) {
           error ? reject(error) : resolve();
         });
       });
@@ -429,10 +458,10 @@ var OpenTokSDK = function () {
   }, {
     key: 'forceDisconnect',
     value: function forceDisconnect(connection) {
-      var _this6 = this;
+      var _this8 = this;
 
       return new Promise(function (resolve, reject) {
-        _this6.session.forceDisconnect(connection, function (error) {
+        _this8.session.forceDisconnect(connection, function (error) {
           error ? reject(error) : resolve();
         });
       });
@@ -447,10 +476,10 @@ var OpenTokSDK = function () {
   }, {
     key: 'forceUnpublish',
     value: function forceUnpublish(stream) {
-      var _this7 = this;
+      var _this9 = this;
 
       return new Promise(function (resolve, reject) {
-        _this7.session.forceUnpublish(stream, function (error) {
+        _this9.session.forceUnpublish(stream, function (error) {
           error ? reject(error) : resolve();
         });
       });
@@ -468,12 +497,12 @@ var OpenTokSDK = function () {
   }, {
     key: 'signal',
     value: function signal(type, signalData, to) {
-      var _this8 = this;
+      var _this10 = this;
 
       var data = signalData && JSON.stringify(signalData) || undefined;
       var signal = to ? { type: type, data: data, to: to } : { type: type, data: data };
       return new Promise(function (resolve, reject) {
-        _this8.session.signal(signal, function (error) {
+        _this10.session.signal(signal, function (error) {
           error ? reject(error) : resolve();
         });
       });

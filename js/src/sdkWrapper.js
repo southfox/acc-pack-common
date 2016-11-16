@@ -155,9 +155,9 @@ class OpenTokSDK {
   enablePublisherAudio(enable) {
     const { publishers } = stateMap.get(this).currentPubSub();
     Object.keys(publishers.camera).forEach((publisherId) => {
-      try{
-         publishers.camera[publisherId].publishAudio(enable);
-      } catch (error) {
+      if (this.publisherIsReady(publishers.camera[publisherId])) {
+        publishers.camera[publisherId].publishAudio(enable);
+      } else {
         logging.message('Could not toggle publisher audio. Publisher has not finished loading.')
       }
     });
@@ -170,9 +170,9 @@ class OpenTokSDK {
   enablePublisherVideo(enable) {
     const { publishers } = stateMap.get(this).currentPubSub();
     Object.keys(publishers.camera).forEach((publisherId) => {
-      try {
+      if (this.publisherIsReady(publishers.camera[publishser])) {
         publishers.camera[publisherId].publishVideo(enable);
-      } catch (error) {
+      } else {
         logging.message('Could not toggle publisher video. Publisher has not finished loading.')
       }
     });
@@ -236,10 +236,9 @@ class OpenTokSDK {
     return new Promise((resolve, reject) => {
       const state = stateMap.get(this);
       this.session.publish(publisher, (error) => {
-        error && reject(error);
         const type = publisher.stream.videoType;
         state.addPublisher(type, publisher);
-        resolve(publisher);
+        error ? reject(error) : resolve(publisher);
       });
     });
   }
@@ -253,6 +252,26 @@ class OpenTokSDK {
     const state = stateMap.get(this);
     this.session.unpublish(publisher);
     state.removePublisher(type, publisher);
+  }
+
+  /**
+   * Has the publisher object finished loading
+   * @param {Object} publisher - An OpenTok publisher object
+   * @returns {Boolean}
+   */
+  publisherIsReady(publisher) {
+    return !publisher.isLoading();
+  }
+
+  /**
+   * Does the publisher currently have audio or video
+   * @param {Object} publisher - An OpenTok publisher object
+   * @param {String} type - 'audio' or 'video'
+   * @returns {Boolean}
+   */
+  publisherHas(publisher, type) {
+    const prop = `has${type[0].toUpperCase() + type.slice(1)}`;
+    return publisher[prop];
   }
 
   /**
