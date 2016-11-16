@@ -154,7 +154,11 @@ class OpenTokSDK {
   enablePublisherAudio(enable) {
     const { publishers } = stateMap.get(this).currentPubSub();
     Object.keys(publishers.camera).forEach(publisherId => {
-      publishers.camera[publisherId].publishAudio(enable);
+      try {
+        publishers.camera[publisherId].publishAudio(enable);
+      } catch (error) {
+        logging.message('Could not toggle publisher audio. Publisher has not finished loading.');
+      }
     });
   }
 
@@ -165,7 +169,11 @@ class OpenTokSDK {
   enablePublisherVideo(enable) {
     const { publishers } = stateMap.get(this).currentPubSub();
     Object.keys(publishers.camera).forEach(publisherId => {
-      publishers.camera[publisherId].publishVideo(enable);
+      try {
+        publishers.camera[publisherId].publishVideo(enable);
+      } catch (error) {
+        logging.message('Could not toggle publisher video. Publisher has not finished loading.');
+      }
     });
   }
 

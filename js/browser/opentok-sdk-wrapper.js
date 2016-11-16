@@ -217,7 +217,11 @@ var OpenTokSDK = function () {
           publishers = _stateMap$get$current.publishers;
 
       Object.keys(publishers.camera).forEach(function (publisherId) {
-        publishers.camera[publisherId].publishAudio(enable);
+        try {
+          publishers.camera[publisherId].publishAudio(enable);
+        } catch (error) {
+          logging.message('Could not toggle publisher audio. Publisher has not finished loading.');
+        }
       });
     }
 
@@ -233,7 +237,11 @@ var OpenTokSDK = function () {
           publishers = _stateMap$get$current2.publishers;
 
       Object.keys(publishers.camera).forEach(function (publisherId) {
-        publishers.camera[publisherId].publishVideo(enable);
+        try {
+          publishers.camera[publisherId].publishVideo(enable);
+        } catch (error) {
+          logging.message('Could not toggle publisher video. Publisher has not finished loading.');
+        }
       });
     }
 
