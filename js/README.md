@@ -52,8 +52,7 @@ Click [here](./react-sample-app) for a sample which demonstrates how to use the 
 
 **Parameters**
 
-**eventListeners**: `Array | Object` An object (or array of objects) with
-       eventName/callback k/v pairs
+**eventListeners**: `Array | Object` An object (or array of objects) with `eventName => callback` key-value pairs.  The context of all callbacks will be bound to the instance of the `sdk-wrapper` so that you can access its methods and state from within the callback function using `this`.
 
 **Returns**: `Promise => <resolve: empty, reject: Error>`
 
