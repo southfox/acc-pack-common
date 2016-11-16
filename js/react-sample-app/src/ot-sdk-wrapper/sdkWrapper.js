@@ -343,7 +343,7 @@ class OpenTokSDK {
    * https://tokbox.com/developer/guides/signaling/js/
    */
   signal(type, signalData, to) {
-    const data = JSON.stringify(signalData);
+    const data = signalData && JSON.stringify(signalData) || undefined;
     const signal = to ? { type, data, to } : { type, data };
     return new Promise((resolve, reject) => {
       this.session.signal(signal, error => {

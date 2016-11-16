@@ -470,7 +470,7 @@ var OpenTokSDK = function () {
     value: function signal(type, signalData, to) {
       var _this8 = this;
 
-      var data = JSON.stringify(signalData);
+      var data = signalData && JSON.stringify(signalData) || undefined;
       var signal = to ? { type: type, data: data, to: to } : { type: type, data: data };
       return new Promise(function (resolve, reject) {
         _this8.session.signal(signal, function (error) {
