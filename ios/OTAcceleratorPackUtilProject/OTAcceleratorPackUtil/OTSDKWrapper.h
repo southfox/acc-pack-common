@@ -58,7 +58,12 @@ typedef enum : NSUInteger {
 #pragma mark - publisher
 - (UIView *)captureAudioVideo;
 
-- (NSError *)publishAudioVideo:(BOOL)published;
+- (NSError *)publish;
+
+// if we merge screen sharing accelerator pack, this can be the API.
+- (NSError *)publishWithView:(UIView *)view;
+
+- (NSError *)stopPublishing;
 
 - (void)enablePublishingMedia:(OTSDKWrapperMediaType)mediaType
                       enabled:(BOOL)enabled;
