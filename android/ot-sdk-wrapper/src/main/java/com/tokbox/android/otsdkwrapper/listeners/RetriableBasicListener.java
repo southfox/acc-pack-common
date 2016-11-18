@@ -20,10 +20,10 @@ public interface RetriableBasicListener<Wrapper>
   void onPreviewViewDestroyed(Wrapper wrapper, View localView);
 
   @Override
-  void onStartedSharingMedia(Wrapper wrapper, boolean screensharing);
+  void onStartedPublishingMedia(Wrapper wrapper, boolean screensharing);
 
   @Override
-  void onStoppedSharingMedia(Wrapper wrapper, boolean screensharing);
+  void onStoppedPublishingMedia(Wrapper wrapper, boolean screensharing);
 
   @Override
   void onRemoteViewReady(Wrapper wrapper, View remoteView, String remoteId, String data);
@@ -38,7 +38,7 @@ public interface RetriableBasicListener<Wrapper>
   void onRemoteLeft(Wrapper wrapper, String remoteId);
 
   @Override
-  void onRemoteVideoChange(Wrapper wrapper, String remoteId, String reason, boolean videoActive,
+  void onRemoteVideoChanged(Wrapper wrapper, String remoteId, String reason, boolean videoActive,
                            boolean subscribed);
 
   @Override

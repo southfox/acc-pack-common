@@ -66,10 +66,10 @@ public class UnfailingBasicListener<Wrapper> implements RetriableBasicListener<W
     }
 
     @Override
-    public void onStartedSharingMedia(Wrapper wrapper, boolean screensharing) {
+    public void onStartedPublishingMedia(Wrapper wrapper, boolean screensharing) {
         try {
             if (mInternalListener != null) {
-                mInternalListener.onStartedSharingMedia(wrapper, screensharing);
+                mInternalListener.onStartedPublishingMedia(wrapper, screensharing);
             }
         } catch (ListenerException e) {
             Log.d(LOG_TAG, "onStartedSharingMedia Exception: ", e);
@@ -77,10 +77,10 @@ public class UnfailingBasicListener<Wrapper> implements RetriableBasicListener<W
     }
 
     @Override
-    public void onStoppedSharingMedia(Wrapper wrapper, boolean screensharing) {
+    public void onStoppedPublishingMedia(Wrapper wrapper, boolean screensharing) {
         try {
             if (mInternalListener != null) {
-                mInternalListener.onStoppedSharingMedia(wrapper, screensharing);
+                mInternalListener.onStoppedPublishingMedia(wrapper, screensharing);
             }
         } catch (ListenerException e) {
             Log.d(LOG_TAG, "onStoppedSharingMedia Exception: ", e);
@@ -154,11 +154,11 @@ public class UnfailingBasicListener<Wrapper> implements RetriableBasicListener<W
     }
 
     @Override
-    public void onRemoteVideoChange(Wrapper wrapper, String remoteId, String reason, boolean disabled,
+    public void onRemoteVideoChanged(Wrapper wrapper, String remoteId, String reason, boolean disabled,
                                     boolean subscribed) {
         try {
             if (mInternalListener != null) {
-                mInternalListener.onRemoteVideoChange(wrapper, remoteId, reason, disabled, subscribed);
+                mInternalListener.onRemoteVideoChanged(wrapper, remoteId, reason, disabled, subscribed);
             }
         } catch (ListenerException e) {
             Log.d(LOG_TAG, "onRemoteVideoChange Exception: ", e);

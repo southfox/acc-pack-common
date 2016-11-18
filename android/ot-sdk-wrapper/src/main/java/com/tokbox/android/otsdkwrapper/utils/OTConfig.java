@@ -27,6 +27,8 @@ public class OTConfig {
         this.sessionId = builder.sessionId;
         this.token = builder.token;
         this.apiKey = builder.apiKey;
+        this.subscribeAutomatically = builder.subscribeAutomatically;
+        this.subscribeToSelf = builder.subscribeToSelf;
     }
 
     /**
@@ -66,7 +68,7 @@ public class OTConfig {
      * @return Whether to subscribe to self (<code>true</code>) or not (
      *                     <code>false</code>).
      */
-    public boolean isSubscribeToSelf(){
+    public boolean shouldSubscribeToSelf(){
         return subscribeToSelf;
     }
 
@@ -75,7 +77,7 @@ public class OTConfig {
      * @return Whether to subscribe automatically (<code>true</code>) or not (
      *                     <code>false</code>).
      */
-    public boolean isSubscribeAutomatically(){
+    public boolean shouldSubscribeAutomatically(){
         return subscribeAutomatically;
     }
 

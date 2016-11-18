@@ -137,32 +137,32 @@ public class PausableBasicListener<Wrapper> implements RetriableBasicListener<Wr
     }
 
     @Override
-    public void onRemoteVideoChange(final Wrapper wrapper, final String remoteId, final String reason,
+    public void onRemoteVideoChanged(final Wrapper wrapper, final String remoteId, final String reason,
                                     final boolean disabled, final boolean subscribed) {
         runUIListenerTask(new ListenerTask() {
             @Override
             public void run() throws ListenerException {
-                mUnderlyingListener.onRemoteVideoChange(wrapper, remoteId, reason, disabled, subscribed);
+                mUnderlyingListener.onRemoteVideoChanged(wrapper, remoteId, reason, disabled, subscribed);
             }
         });
     }
 
     @Override
-    public void onStartedSharingMedia(final Wrapper wrapper, final boolean screensharing) {
+    public void onStartedPublishingMedia(final Wrapper wrapper, final boolean screensharing) {
         runUIListenerTask(new PausableBasicListener.ListenerTask() {
             @Override
             public void run() throws ListenerException {
-                mUnderlyingListener.onStartedSharingMedia(wrapper, screensharing);
+                mUnderlyingListener.onStartedPublishingMedia(wrapper, screensharing);
             }
         });
     }
 
     @Override
-    public void onStoppedSharingMedia(final Wrapper wrapper, final boolean screensharing) {
+    public void onStoppedPublishingMedia(final Wrapper wrapper, final boolean screensharing) {
         runUIListenerTask(new PausableBasicListener.ListenerTask() {
             @Override
             public void run() throws ListenerException {
-                mUnderlyingListener.onStoppedSharingMedia(wrapper, screensharing);
+                mUnderlyingListener.onStoppedPublishingMedia(wrapper, screensharing);
             }
         });
     }

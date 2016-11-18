@@ -70,20 +70,20 @@ public interface BasicListener<Wrapper> extends BaseOTListener {
     void onRemoteViewDestroyed(Wrapper wrapper, View remoteView, String remoteId) throws ListenerException;
 
     /**
-     * Invoked when the local video/screensharing streaming started
+     * Invoked when the local camera or screensharing streaming started
      * @param wrapper
      * @param screensharing
      * @throws ListenerException
      */
-    void onStartedSharingMedia(Wrapper wrapper, boolean screensharing) throws ListenerException;
+    void onStartedPublishingMedia(Wrapper wrapper, boolean screensharing) throws ListenerException;
 
     /**
-     * Invoked when the local video/screensharing streaming stopped
+     * Invoked when the local camera or screensharing streaming stopped
      * @param wrapper
      * @param screensharing
      * @throws ListenerException
      */
-    void onStoppedSharingMedia(Wrapper wrapper, boolean screensharing) throws ListenerException;
+    void onStoppedPublishingMedia(Wrapper wrapper, boolean screensharing) throws ListenerException;
 
     /**
      * Invoked when a new remote participant joined and started to share video/screen.
@@ -110,7 +110,7 @@ public interface BasicListener<Wrapper> extends BaseOTListener {
      * @param subscribed
      * @throws ListenerException
      */
-    void onRemoteVideoChange(Wrapper wrapper, String remoteId, String reason, boolean videoActive,
+    void onRemoteVideoChanged(Wrapper wrapper, String remoteId, String reason, boolean videoActive,
                              boolean subscribed)
             throws ListenerException;
 
