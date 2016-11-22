@@ -7,10 +7,35 @@
 #import <Foundation/Foundation.h>
 #import <OTAcceleratorPackUtil/OTAcceleratorSession.h>
 
+typedef enum: NSUInteger {
+    OTWrapperDidConnect = 0,
+    OTWrapperDidDisconnect,
+    OTWrapperDidFail,
+    OTWrapperDidStartPublishing,
+    OTWrapperDidStopPublishing,
+    OTWrapperDidStartCaptureMedia,
+    OTWrapperDidStopCaptureMedia,
+    OTWrapperDidJoinRemote,
+    OTWrapperDidLeaveRemote,
+    OTReceivedVideoDisabledByLocal,
+    OTReceivedVideoEnabledByLocal,
+    OTRemoteVideoDisabledByRemote,
+    OTRemoteVideoEnabledByRemote,
+    OTRemoteVideoDisabledByBadQuality,
+    OTRemoteVideoEnabledByGoodQuality,
+    OTRemoteVideoDisableWarning,
+    OTRemoteVideoDisableWarningLifted,
+    OTCameraChanged,
+    OTWrapperDidBeginReconnecting,
+    OTWrapperDidReconnect,
+} OTWrapperSignal;
+
 typedef enum : NSUInteger {
     OTSDKWrapperMediaTypeAudio,
     OTSDKWrapperMediaTypeVideo
 } OTSDKWrapperMediaType;
+
+typedef void (^OTWrapperBlock)(OTWrapperSignal signal, NSString *streamId, NSError *error);
 
 @class OTSDKWrapper;
 @protocol OTSDKWrapperDataSource <NSObject>
@@ -41,6 +66,8 @@ typedef enum : NSUInteger {
 - (NSError *)broadcastSignalWithType:(NSString *)type
                                 data:(id)string;
 
+- (void)connectWithHandler:(OTWrapperBlock)handler;
+
 /**
  *  Force un-publish/un-subscribe, disconnect from session and clean everything
  */
@@ -56,36 +83,41 @@ typedef enum : NSUInteger {
 - (NSTimeInterval)intervalWithConnectionId:(NSString *)connectionId;
 
 #pragma mark - publisher
-- (UIView *)captureAudioVideo;
+- (UIView *)captureLocalMedia;
 
-- (NSError *)publish;
+- (NSError *)startPublishingLocalMedia;
 
 // if we merge screen sharing accelerator pack, this can be the API.
-- (NSError *)publishWithView:(UIView *)view;
+//- (NSError *)publishWithView:(UIView *)view;
 
-- (NSError *)stopPublishing;
+- (NSError *)stopPublishingLocalMedia;
 
-- (void)enablePublishingMedia:(OTSDKWrapperMediaType)mediaType
-                      enabled:(BOOL)enabled;
+- (void)enableLocalMedia:(OTSDKWrapperMediaType)mediaType
+                 enabled:(BOOL)enabled;
+
+- (BOOL)isLocalMediaEnabled:(OTSDKWrapperMediaType)mediaType;
 
 - (void)switchCamera;
 
 - (void)switchVideoViewScaleBehavior;
 
 #pragma mark - subscirbers
-- (void)newParticipantObserver:(void (^)(NSString *streamId))completion;
+- (void)incomingRemotesObserver:(void (^)(NSString *streamId))completion;
 
-- (UIView *)addParticipantWithStreamId:(NSString *)streamId
-                                 error:(NSError **)error;
+- (UIView *)addRemoteWithStreamId:(NSString *)streamId
+                            error:(NSError **)error;
 
-- (NSError *)removeParticipantWithStreamId:(NSString *)streamId;
+- (NSError *)removeRemoteWithStreamId:(NSString *)streamId;
 
-- (void)participantsLeaveObserver:(void (^)(NSString *streamId))completion;
+- (void)remotesLeaveObserver:(void (^)(NSString *streamId))completion;
 
-- (void)enableParticipantWithStreamId:(NSString *)streamId
-                                media:(OTSDKWrapperMediaType)mediaType
-                              enabled:(BOOL)enabled;
+- (void)enableRemoteWithStreamId:(NSString *)streamId
+                           media:(OTSDKWrapperMediaType)mediaType
+                         enabled:(BOOL)enabled;
 
-- (void)switchParticipantVideoViewScaleBehaviorWithStreamId:(NSString *)streamId;
+- (BOOL)isRemoteEnabledWithStreamId:(NSString *)streamId
+                              media:(OTSDKWrapperMediaType)mediaType;
+
+- (void)switchRemoteVideoViewScaleBehaviorWithStreamId:(NSString *)streamId;
 
 @end
