@@ -24,4 +24,11 @@
 
 @property (readonly) BOOL hasVideoContainerStatus; //Status of the container of the stream (publisher/subscriber).
 
+- (instancetype)initWithStreamView: (UIView *)view
+                     containerAudo: (BOOL) containerAudio
+                    containerVideo: (BOOL) containerVideo
+                          hasAudio: (BOOL) hasAudio
+                          hasVideo: (BOOL) hasVideo
+                              type: (OTStreamVideoType) type
+                              size: (Size) dimensions;
 @end
