@@ -6,6 +6,7 @@
 
 #import <Foundation/Foundation.h>
 #import <OTAcceleratorPackUtil/OTAcceleratorSession.h>
+#import <OTAcceleratorPackUtil/OTStreamStatus.h>
 
 typedef enum: NSUInteger {
     OTWrapperDidConnect = 0,
@@ -83,6 +84,9 @@ typedef void (^OTWrapperBlock)(OTWrapperSignal signal, NSString *streamId, NSErr
 - (NSTimeInterval)intervalWithConnectionId:(NSString *)connectionId;
 
 #pragma mark - publisher
+
+@property (readonly, nonatomic) OTStreamStatus* localStreamStatus;
+
 - (UIView *)captureLocalMedia;
 
 - (NSError *)startPublishingLocalMedia;
@@ -102,6 +106,9 @@ typedef void (^OTWrapperBlock)(OTWrapperSignal signal, NSString *streamId, NSErr
 - (void)switchVideoViewScaleBehavior;
 
 #pragma mark - subscirbers
+
+@property (readonly, nonatomic) OTStreamStatus* remoteStreamStatus;
+
 - (void)incomingRemotesObserver:(void (^)(NSString *streamId))completion;
 
 - (UIView *)addRemoteWithStreamId:(NSString *)streamId
@@ -111,11 +118,11 @@ typedef void (^OTWrapperBlock)(OTWrapperSignal signal, NSString *streamId, NSErr
 
 - (void)remotesLeaveObserver:(void (^)(NSString *streamId))completion;
 
-- (void)enableRemoteWithStreamId:(NSString *)streamId
+- (void)enableReceivedMediaWithStreamId:(NSString *)streamId
                            media:(OTSDKWrapperMediaType)mediaType
                          enabled:(BOOL)enabled;
 
-- (BOOL)isRemoteEnabledWithStreamId:(NSString *)streamId
+- (BOOL)isReceivedMediaEnabledWithStreamId:(NSString *)streamId
                               media:(OTSDKWrapperMediaType)mediaType;
 
 - (void)switchRemoteVideoViewScaleBehaviorWithStreamId:(NSString *)streamId;
