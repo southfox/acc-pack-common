@@ -6,23 +6,24 @@
 //  Copyright © 2016 Tokbox, Inc. All rights reserved.
 //
 
+#import <UIKit/UIKit.h>
 #import <OpenTok/OpenTok.h>
 
 @interface OTStreamStatus : NSObject
 
-@property(readonly) BOOL hasAudio;
+@property(readonly, nonatomic) BOOL hasAudio;
 
-@property(readonly) BOOL hasVideo;
+@property(readonly, nonatomic) BOOL hasVideo;
 
-@property (readonly) Size videoDimensions;
+@property(readonly, nonatomic) CGSize videoDimensions;
 
-@property (readonly) OTStreamVideoType videoType;
+@property(readonly, nonatomic) OTStreamVideoType videoType;
 
-@property (readonly) UIView* view;
+@property(readonly, nonatomic) UIView* view;
 
-@property (readonly) BOOL hasAudioContainerStatus; //Status of the container of the stream (publisher/subscriber).
+@property(readonly, nonatomic) BOOL hasAudioContainerStatus; //Status of the container of the stream (publisher/subscriber).
 
-@property (readonly) BOOL hasVideoContainerStatus; //Status of the container of the stream (publisher/subscriber).
+@property(readonly, nonatomic) BOOL hasVideoContainerStatus; //Status of the container of the stream (publisher/subscriber).
 
 - (instancetype)initWithStreamView: (UIView *)view
                      containerAudo: (BOOL) containerAudio
@@ -30,5 +31,5 @@
                           hasAudio: (BOOL) hasAudio
                           hasVideo: (BOOL) hasVideo
                               type: (OTStreamVideoType) type
-                              size: (Size) dimensions;
+                              size: (CGSize) dimensions;
 @end

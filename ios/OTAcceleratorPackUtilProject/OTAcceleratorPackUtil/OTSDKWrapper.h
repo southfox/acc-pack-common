@@ -85,11 +85,9 @@ typedef void (^OTWrapperBlock)(OTWrapperSignal signal, NSString *streamId, NSErr
 
 #pragma mark - publisher
 
-@property (readonly, nonatomic) OTStreamStatus* localStreamStatus;
-
 - (UIView *)captureLocalMedia;
 
-- (NSError *)startPublishingLocalMedia;
+- (UIView *)startPublishingLocalMedia;
 
 // if we merge screen sharing accelerator pack, this can be the API.
 //- (NSError *)publishWithView:(UIView *)view;
@@ -105,18 +103,14 @@ typedef void (^OTWrapperBlock)(OTWrapperSignal signal, NSString *streamId, NSErr
 
 - (void)switchVideoViewScaleBehavior;
 
+- (OTStreamStatus *) getLocalStreamStatus;
+
 #pragma mark - subscirbers
-
-@property (readonly, nonatomic) OTStreamStatus* remoteStreamStatus;
-
-- (void)incomingRemotesObserver:(void (^)(NSString *streamId))completion;
 
 - (UIView *)addRemoteWithStreamId:(NSString *)streamId
                             error:(NSError **)error;
 
 - (NSError *)removeRemoteWithStreamId:(NSString *)streamId;
-
-- (void)remotesLeaveObserver:(void (^)(NSString *streamId))completion;
 
 - (void)enableReceivedMediaWithStreamId:(NSString *)streamId
                            media:(OTSDKWrapperMediaType)mediaType
@@ -126,5 +120,7 @@ typedef void (^OTWrapperBlock)(OTWrapperSignal signal, NSString *streamId, NSErr
                               media:(OTSDKWrapperMediaType)mediaType;
 
 - (void)switchRemoteVideoViewScaleBehaviorWithStreamId:(NSString *)streamId;
+
+- (OTStreamStatus *) getRemoteStreamStatusWithStreamId:(NSString *) streamId;
 
 @end
