@@ -6,7 +6,7 @@
 
 #import "TestMultipartyCommunicatorViewController.h"
 #import "AppDelegate.h"
-#import "OTMultiPartyCommunciator.h"
+#import "OTMultiPartyCommunicator.h"
 
 @interface TestMultipartyCommunicatorViewController () <OTMultiPartyCommunciatorDataSource>
 @property (weak, nonatomic) IBOutlet UIView *publisherView;

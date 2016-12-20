@@ -4,7 +4,7 @@
 //  Copyright © 2016 Tokbox, Inc. All rights reserved.
 //
 
-#import "OTMultiPartyCommunciator.h"
+#import "OTMultiPartyCommunicator.h"
 #import "OTAcceleratorSession.h"
 #import "OTAcceleratorPackUtilBundle.h"
 
