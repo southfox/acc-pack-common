@@ -54,11 +54,6 @@ typedef void (^OTMultiPartyCommunicatorBlock)(OTCommunicationSignal signal, OTMu
  */
 - (NSError *)disconnect;
 
-/**
- *  A boolean value to indicate whether the call is enabled. `YES` once the publisher connects or after OTSessionDidConnect being signaled.
- */
-@property (readonly, nonatomic) BOOL isCallEnabled;
-
 
 #pragma mark - publisher
 /**
@@ -84,11 +79,6 @@ typedef void (^OTMultiPartyCommunicatorBlock)(OTCommunicationSignal signal, OTMu
  *  if the publisher has not yet begun publishing, getting this property returns the preferred camera position.
  */
 @property (nonatomic) AVCaptureDevicePosition cameraPosition;
-
-/**
- * Container of subscribers: instance of OTMultiPartyRemote
- */
-@property (readonly, nonatomic) NSMutableArray *subscribers;
 
 @end
 
