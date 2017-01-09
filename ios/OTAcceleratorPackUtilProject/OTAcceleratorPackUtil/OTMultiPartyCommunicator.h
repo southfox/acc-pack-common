@@ -54,6 +54,10 @@ typedef void (^OTMultiPartyCommunicatorBlock)(OTCommunicationSignal signal, OTMu
  */
 - (NSError *)disconnect;
 
+/**
+ *  A boolean value to indicate whether the call is enabled. `YES` once the publisher connects or after OTSessionDidConnect being signaled.
+ */
+@property (readonly, nonatomic) BOOL isCallEnabled;
 
 #pragma mark - publisher
 /**
