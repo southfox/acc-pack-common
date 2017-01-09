@@ -71,7 +71,7 @@
         _subscriber.viewScaleBehavior = OTVideoViewScaleBehaviorFit;
     }
     else {
-        _subscriber.viewScaleBehavior = OTVideoViewFill;
+        _subscriber.viewScaleBehavior = OTVideoViewScaleBehaviorFill;
     }
 }
 
